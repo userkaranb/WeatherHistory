@@ -21,5 +21,12 @@ namespace Jubilado.Controllers
             new DataLayer().CreateCity(city);
             return Ok("done");
         }
+
+        [HttpPut()]
+        public IActionResult CreateWeatherHistory([FromBody] WeatherHistory historyItem)
+        {
+            new DataLayer().CreateWeatherHistoryItem(historyItem);
+            return Ok("created.");
+        }
     }
 }

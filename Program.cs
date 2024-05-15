@@ -6,12 +6,37 @@
 * Create city class and put city object
 * Create route to get city info
 * Download Postman to do the same
+
 * Create route to put weather history
 * Create route to get weather history
-* Create a script to Put multiple city and weather info's
+* Create a script to Put multiple city and weather info's (BACKFILL)
 * ...
 */
 
+using Jubilado;
+using System;
+using System.Diagnostics;
+
+ ProcessStartInfo processStartInfo = new ProcessStartInfo
+{
+    FileName = "/bin/bash", // For Unix-like systems
+    Arguments = $"-c \"kill -9 $(lsof -t -i:5084)\"",
+    RedirectStandardOutput = true,
+    UseShellExecute = false
+};
+
+// Start the process
+Process process = new Process
+{
+    StartInfo = processStartInfo
+};
+process.Start();
+
+// Read the output
+string output = process.StandardOutput.ReadToEnd();
+
+// Wait for the process to exit
+process.WaitForExit();
 var builder = WebApplication.CreateBuilder(args);
 Console.WriteLine("here");
 // Add services to the container.
@@ -35,7 +60,7 @@ app.MapGet("/foo", async context =>
 
 app.MapControllers();
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); 
 app.UseStaticFiles();
 
 app.UseRouting();

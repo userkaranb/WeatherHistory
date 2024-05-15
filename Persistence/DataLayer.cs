@@ -49,7 +49,7 @@ public class DataLayer
 
     public async void CreateCity(City city)
     {
-         var item = new Dictionary<string, AttributeValue>
+        var item = new Dictionary<string, AttributeValue>
         {
             { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
             { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
@@ -57,7 +57,26 @@ public class DataLayer
             { "WeatherScore", new AttributeValue { S = city.WeatherScore?.ToString().Trim() ?? "" } }
         };
 
-        // Create PutItem request
+       await WriteItem(item);
+    }
+
+    public async void CreateWeatherHistoryItem(WeatherHistory historyItem)
+    {
+        var item = new Dictionary<string, AttributeValue>
+        {
+            { "PK", new AttributeValue { S = $"CITY#{historyItem.CityName}" } },
+            { "SK", new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
+            { "CityName", new AttributeValue { S = $"{historyItem.CityName}" } },
+            { "Date", new AttributeValue { S = historyItem.Date.ToString() } },
+            { "Temperature", new AttributeValue { S = historyItem.Temperature.ToString() } },
+            { "Sunshine", new AttributeValue { S = historyItem.Sunshine.ToString() } },
+        };
+
+        await WriteItem(item);
+    }
+
+    private async Task WriteItem(Dictionary<string, AttributeValue> item)
+    {
         var request = new PutItemRequest
         {
             TableName = TableName,
