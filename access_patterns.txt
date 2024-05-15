@@ -1,0 +1,44 @@
+Persist City
+    - City Name (all caps, spaces by hyphens)
+    - Population
+    - Distance to beach?
+Persist Weather History
+    - Day
+    - Temperature
+    - Sunshine
+    - Humidity
+Get City Info By City
+    - PK: City#<CITY> SK: City<CITY>
+Get Weather History By City
+    - PK: CITY<CITY> SK: #WEATHER#HISTORY#<DATE> (in order)
+
+Create KaranScore
+Create WeatherScore
+Get all cities, sorted by Weather Score
+    - GSI1PK: WeatherScore#<weatherscore> GSI1SK: <CITYID>
+Get all cities, sorted by KaranScore (for now, just weather score)
+    - Can I put this on the same GSI?
+
+Get Flight Prices by City
+    - GSI1PK: 
+Get Safety Score by City
+Get all cities, sorted by Flight Prices
+Get all cities, sorted by Safety Score
+
+Persist Nightlife Score
+Get Nightlife score by City
+
+
+Persist Users
+Persist Subscription from Users to Cities
+Get Users for City
+
+Persist Country and country metadata (lets say, english OR spanish speaking percentage)
+Rank City by language
+
+Email subscribers based off City
+
+Move all full table scan stuff to cache / DAX
+
+
+AGGSTAT#CITYID   CITYID
