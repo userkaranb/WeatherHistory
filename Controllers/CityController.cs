@@ -12,5 +12,11 @@ namespace Jubilado.Controllers
         {
             return new JsonResult("Foo");
         }
+
+        [HttpPut()]
+        public IActionResult CreatCity([FromBody] City city)
+        {
+            return new JsonResult("Foo");
+        }
     }
 }

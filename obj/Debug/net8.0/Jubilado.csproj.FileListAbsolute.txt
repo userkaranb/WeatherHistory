@@ -23,7 +23,8 @@
 /Users/karanb/Documents/Programs/Jubilado/obj/Debug/net8.0/Jubilado.pdb
 /Users/karanb/Documents/Programs/Jubilado/obj/Debug/net8.0/Jubilado.genruntimeconfig.cache
 /Users/karanb/Documents/Programs/Jubilado/obj/Debug/net8.0/ref/Jubilado.dll
-/Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/AWSSDK.dll
 /Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/Newtonsoft.Json.dll
 /Users/karanb/Documents/Programs/Jubilado/obj/Debug/net8.0/Jubilado.csproj.AssemblyReference.cache
 /Users/karanb/Documents/Programs/Jubilado/obj/Debug/net8.0/Jubilado.csproj.Up2Date
+/Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/AWSSDK.Core.dll
+/Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/AWSSDK.DynamoDBv2.dll

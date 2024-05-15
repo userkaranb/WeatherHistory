@@ -8,18 +8,30 @@
     ".NETCoreApp,Version=v8.0": {
       "Jubilado/1.0.0": {
         "dependencies": {
-          "AWSSDK": "2.3.55",
+          "AWSSDK.Core": "3.7.304",
+          "AWSSDK.DynamoDBv2": "3.7.303",
           "Newtonsoft.Json": "13.0.3"
         },
         "runtime": {
           "Jubilado.dll": {}
         }
       },
-      "AWSSDK/2.3.55": {
+      "AWSSDK.Core/3.7.304": {
         "runtime": {
-          "lib/net45/AWSSDK.dll": {
-            "assemblyVersion": "2.3.55.0",
-            "fileVersion": "2.3.55.0"
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.304.0"
+          }
+        }
+      },
+      "AWSSDK.DynamoDBv2/3.7.303": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.304"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.DynamoDBv2.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.303.0"
           }
         }
       },
@@ -39,12 +51,19 @@
       "serviceable": false,
       "sha512": ""
     },
-    "AWSSDK/2.3.55": {
+    "AWSSDK.Core/3.7.304": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-ojzLd3vewfGO2CF2vBlldNTkmvUIXhM97aQDz2PWXUCKbQriiK4ciVC2gTBITw+uodZeEX2gmrF00C2Kn0l4Sg==",
-      "path": "awssdk/2.3.55",
-      "hashPath": "awssdk.2.3.55.nupkg.sha512"
+      "sha512": "sha512-4gmvkvtw8gtxOyqN93R57/qxmt5a7F9jm86Mcv3fPfy5FVo4GuZ7uSQpE5c0XMubOxTpAWVOBSMkvwKembDoTw==",
+      "path": "awssdk.core/3.7.304",
+      "hashPath": "awssdk.core.3.7.304.nupkg.sha512"
+    },
+    "AWSSDK.DynamoDBv2/3.7.303": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-vExfylGEuvGXKgnK30KxzgWIh0tAgPD3aLroppBkcuYSJLo968GyQJCBzc9/KmKGqWsUBKyII76ie+NDMih2+Q==",
+      "path": "awssdk.dynamodbv2/3.7.303",
+      "hashPath": "awssdk.dynamodbv2.3.7.303.nupkg.sha512"
     },
     "Newtonsoft.Json/13.0.3": {
       "type": "package",
