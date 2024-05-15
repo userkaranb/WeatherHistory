@@ -28,12 +28,32 @@ public class DataLayer
 
     }
 
+        public City GetCity(string cityName)
+    {
+        var cityNameUpper = cityName.ToUpper();
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk AND SK = :sk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = $"CITY#{cityNameUpper}" } },
+                { ":sk", new AttributeValue { S = $"CITY#{cityNameUpper}" } }
+            }
+        };
+        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var toDict = queryResponse.Items.First().ToDictionary<string, AttributeValue>();
+        return ItemFactory.ToCity(toDict);
+    }
+
+
     public async void CreateCity(City city)
     {
          var item = new Dictionary<string, AttributeValue>
         {
             { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
             { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+            { "CityName", new AttributeValue { S = $"{city.CityName}" } },
             { "WeatherScore", new AttributeValue { S = city.WeatherScore?.ToString().Trim() ?? "" } }
         };
 
