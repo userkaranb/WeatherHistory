@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
+using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
 
 namespace Jubilado.Persistence;
@@ -27,8 +28,31 @@ public class DataLayer
 
     }
 
-    public async void CreateCity(string cityId)
+    public async void CreateCity(City city)
     {
-        var response = await _client.PutItemAsync(null);
+         var item = new Dictionary<string, AttributeValue>
+        {
+            { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+            { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+            { "WeatherScore", new AttributeValue { S = city.WeatherScore?.ToString().Trim() ?? "" } }
+        };
+
+        // Create PutItem request
+        var request = new PutItemRequest
+        {
+            TableName = TableName,
+            Item = item
+        };
+
+        // Execute PutItem request
+        try
+        {
+            var resp = await _client.PutItemAsync(request);
+            Console.WriteLine("Event inserted successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error inserting event: {ex.Message}");
+        }
     }
 }

@@ -1,3 +1,5 @@
+using Amazon.DynamoDBv2.Model;
+using Jubilado.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +18,8 @@ namespace Jubilado.Controllers
         [HttpPut()]
         public IActionResult CreatCity([FromBody] City city)
         {
-            return new JsonResult("Foo");
+            new DataLayer().CreateCity(city);
+            return Ok("done");
         }
     }
 }
