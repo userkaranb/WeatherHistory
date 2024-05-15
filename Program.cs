@@ -6,10 +6,14 @@
 * Create city class and put city object
 * Create route to get city info
 * Download Postman to do the same
-
 * Create route to put weather history
 * Create route to get weather history
-* Create a script to Put multiple city and weather info's (BACKFILL)
+
+* Create a list of cities that I care about
+* Get one day worth of weather for each city, see what is missing, and fix
+* Make it so that script parses every city and casts results into weatherhistory objects
+* Write to db (BACKFILL)
+* Create Job to calculate weather score based off history
 * ...
 */
 

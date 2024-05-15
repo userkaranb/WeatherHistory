@@ -36,6 +36,12 @@ namespace Jubilado.Controllers
             }
         }
 
+        [HttpGet("{cityName}/weatherhistory")]
+        public JsonResult GetWeatherHistory(string cityName)
+        {
+            return new JsonResult(new DataLayer().GetWeatherHistoryForCity(cityName));
+        }
+
         private bool ValidateWeatherHistoryObject(WeatherHistory historyItem)
         {
             string dateString = historyItem.Date; // Example date string in YYYY-MM-DD format

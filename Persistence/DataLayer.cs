@@ -28,7 +28,7 @@ public class DataLayer
 
     }
 
-        public City GetCity(string cityName)
+    public City GetCity(string cityName)
     {
         var cityNameUpper = cityName.ToUpper();
         var queryRequest = new QueryRequest
@@ -44,6 +44,23 @@ public class DataLayer
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
         var toDict = queryResponse.Items.First().ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
+    }
+
+    public List<WeatherHistory> GetWeatherHistoryForCity(string cityName)
+    {
+        var cityNameUpper = cityName.ToUpper();
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = $"CITY#{cityNameUpper}" } },
+                { ":sk", new AttributeValue { S = $"WEATHERHISTORY#" } }
+            }
+        };
+        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        return queryResponse.Items.Select(x => ItemFactory.ToWeatherHistory(x)).ToList();
     }
 
 
@@ -70,6 +87,7 @@ public class DataLayer
             { "Date", new AttributeValue { S = historyItem.Date.ToString() } },
             { "Temperature", new AttributeValue { S = historyItem.Temperature.ToString() } },
             { "Sunshine", new AttributeValue { S = historyItem.Sunshine.ToString() } },
+            { "Humidity", new AttributeValue { S = historyItem.Humidity.ToString() } },
         };
 
         await WriteItem(item);
