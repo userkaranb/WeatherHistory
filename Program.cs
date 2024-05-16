@@ -21,7 +21,7 @@ using Jubilado;
 using System;
 using System.Diagnostics;
 
- ProcessStartInfo processStartInfo = new ProcessStartInfo
+ProcessStartInfo processStartInfo = new ProcessStartInfo
 {
     FileName = "/bin/bash", // For Unix-like systems
     Arguments = $"-c \"kill -9 $(lsof -t -i:5084)\"",
@@ -73,4 +73,7 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+Backfiller.Execute();
+
 app.Run();
+
