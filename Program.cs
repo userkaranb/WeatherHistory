@@ -8,13 +8,17 @@
 * Download Postman to do the same
 * Create route to put weather history
 * Create route to get weather history
-
 * Create a list of cities that I care about
 * Get one day worth of weather for each city, see what is missing, and fix
 * Make it so that script parses every city and casts results into weatherhistory objects
 * Write to db (BACKFILL)
-* Create Job to calculate weather score based off history
-* ...
+
+* CREATE A NEW LAMBDA WITHIN THIS SOLUTION (FIGURE OUT HOW TO CREATE NEW PROJECTS)
+* HAVE THE LAMBDA DO SOMETHING SIMPLE -- YOU INVOKE IT, AND IT PRINTS SOMETHING
+* CONNECT IT TO THE DATABASE - SOMETHING SIMPLE, JUST GET A RECORD FROM THE DB
+* CONNECT IT TO CALL GETWEATHERHISTORYBYCITY
+* WRITE ACTUAL MAD FUNCTION FOR WEATHER SCORE. foo.
+....* ... 
 */
 
 using Jubilado;
