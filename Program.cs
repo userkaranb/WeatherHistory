@@ -55,19 +55,10 @@ builder.Services.AddRazorPages();
 var app = builder.Build();
 var autoFacBuilder = new ContainerBuilder();
 autoFacBuilder.RegisterType<DataLayer>().As<IDataLayer>();
-autoFacBuilder.RegisterType<WeatherScoreCalculator>().As<IWeatherScoreCalculator>();
+autoFacBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
 autoFacBuilder.RegisterType<Backfiller>().As<IBackfiller>();
 var container = autoFacBuilder.Build();
 
-// var host = Host.CreateDefaultBuilder(args)
-//             .ConfigureServices((_, services) =>
-//             {
-//                 // Register your services here. For example:
-//                 services.AddTransient<IDataLayer, DataLayer>();
-//                 services.AddTransient<IWeatherScoreCalculator, WeatherScoreCalculator>();
-//             }).Build();
-// await host.RunAsync();
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");

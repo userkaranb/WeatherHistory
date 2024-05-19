@@ -16,7 +16,7 @@ using Jubilado.Persistence;
 public interface IBackfiller
 {
     void ExecuteWeatherScoreBackfill();
-    void Execute();
+    Task Execute();
 }
 
 public class Backfiller : IBackfiller
@@ -26,12 +26,12 @@ public class Backfiller : IBackfiller
     const string KEY = "YLQ4H9DL7KCFMPEA6PDFU2W59";
     const string URI = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
     private IDataLayer _dataLayer;
-    private IWeatherScoreCalculator _weatherScoreCalculator;
+    private ICityCreatorService _cityCreatorService;
 
-    public Backfiller(IDataLayer dataLayer, IWeatherScoreCalculator weatherScoreCalculator)
+    public Backfiller(IDataLayer dataLayer, ICityCreatorService cityCreatorService)
     {
         _dataLayer = dataLayer;
-        _weatherScoreCalculator = weatherScoreCalculator;
+        _cityCreatorService = cityCreatorService;
     }
 
     public async void ExecuteWeatherScoreBackfill()
@@ -39,32 +39,20 @@ public class Backfiller : IBackfiller
         if(SHOULD_RUN)
         {
             var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
-            _weatherScoreCalculator.PersistWeatherForCities(citiesList);
+            _cityCreatorService.CreateCity(citiesList);
             Console.WriteLine("Im out here");
         }
         var resp = _dataLayer.GetCity(new City("bUenoS Aires"));
-        Console.WriteLine(resp.WeatherScore);
+        Console.WriteLine(resp.CityStats?.WeatherScore);
     }
     
-    public async void Execute()
+    public async Task Execute()
     {
         var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
         if(SHOULD_RUN)
         {
-            var (start, end) = GetDateRanges();
-            HttpClient client = new HttpClient();
-            foreach(var city in citiesList)
-            {
-                var url = GetFormattedUrl(city.CityName, start, end);
-                await FetchFromApi(client, city.CityName, url);
-            }
-            Console.WriteLine("Executing.");
-            foreach (var city in citiesList)
-            {
-                _dataLayer.CreateCity(city);
-            }
+            await _cityCreatorService.CreateCity(citiesList);
         }
-
     }
 
     private async Task FetchFromApi(HttpClient client, string city, string url)

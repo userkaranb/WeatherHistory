@@ -7,12 +7,13 @@ public class City : Item
 {
 
     public string CityName {private set; get;}
-    public float? WeatherScore {private set; get;}
 
-    public City(string cityName, float? weatherScore = null)
+    public CityStatWrapper? CityStats { set; get;}
+
+    public City(string cityName, CityStatWrapper? cityStats = null)
     {
         CityName = cityName.ToUpper().Replace(" ", "-");
-        WeatherScore = weatherScore;
+        CityStats = cityStats;
     }
 
 }

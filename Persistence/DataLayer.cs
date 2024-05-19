@@ -80,7 +80,12 @@ public class DataLayer : IDataLayer
             { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
             { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
             { "CityName", new AttributeValue { S = $"{city.CityName}" } },
-            { "WeatherScore", new AttributeValue { S = city.WeatherScore?.ToString().Trim() ?? "" } }
+            { "TempScore", new AttributeValue { S = city.CityStats?.TemperatureScore.ToString().Trim() } },
+            { "HumScore", new AttributeValue { S = city.CityStats?.HumidityScore.ToString().Trim() } },
+            { "IdealSunDays", new AttributeValue { S = city.CityStats?.IdealSunshineDays.ToString().Trim() } },
+            { "IdealTempDays", new AttributeValue { S = city.CityStats?.IdealTempRangeDays.ToString().Trim() } },
+            { "SunScore", new AttributeValue { S = city.CityStats?.SunshineScore.ToString().Trim() } },
+            { "WeatherScore", new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
         };
 
        await WriteItem(item);

@@ -9,6 +9,7 @@ namespace Jubilado.Controllers
     [ApiController]
     public class CityController : ControllerBase
     {
+        
         [HttpGet("{cityName}")]
         public JsonResult Get(string cityName)
         {
@@ -16,9 +17,14 @@ namespace Jubilado.Controllers
         }
 
         [HttpPut()]
-        public IActionResult CreatCity([FromBody] City city)
+        public IActionResult CreatCity([FromBody] CreateCityRequest request)
         {
-            new DataLayer().CreateCity(city);
+            var cityList = new List<City>()
+            {
+                new City(request.CityName)
+            };
+            // DI me
+            new CityCreatorService(new DataLayer()).CreateCity(cityList);
             return Ok("done");
         }
 
