@@ -1,8 +1,10 @@
+using Jubilado;
+
 public static class CityListHelper
 {
-    public static List<string> GetCitiesOfInterest()
+    public static List<City> GetCitiesOfInterest()
     {
-        return new List<string>()
+        var cityListName = new List<string>()
         {
             "Buenos Aires",
             "New York City",
@@ -52,5 +54,6 @@ public static class CityListHelper
             "San Jose",
             "Cartagena"
         };
+        return cityListName.Select(x => new City(x)).ToList();
     }
 }

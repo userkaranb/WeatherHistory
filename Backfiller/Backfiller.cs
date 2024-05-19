@@ -41,13 +41,13 @@ public static class Backfiller
             HttpClient client = new HttpClient();
             foreach(var city in citiesList)
             {
-                var url = GetFormattedUrl(city, start, end);
-                await FetchFromApi(client, city, url);
+                var url = GetFormattedUrl(city.CityName, start, end);
+                await FetchFromApi(client, city.CityName, url);
             }
             Console.WriteLine("Executing.");
             foreach (var city in citiesList)
             {
-                dataLayer.CreateCity(new City(city));
+                dataLayer.CreateCity(city);
             }
         }
 
@@ -92,11 +92,11 @@ public static class Backfiller
         return weatherHistoryItems;
     }
 
-    public static List<string> GetDryRunCitiesOfInterest()
+    public static List<City> GetDryRunCitiesOfInterest()
     {
-        return new List<string>()
+        return new List<City>()
         {
-            "Buenos Aires"
+            new City("Buenos Aires")
         };
     }
 
