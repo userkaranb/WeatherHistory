@@ -77,7 +77,8 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
-Backfiller.Execute();
+// Backfiller.Execute();
+Backfiller.ExecuteWeatherScoreBackfill();
 
 app.Run();
 

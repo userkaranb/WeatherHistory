@@ -22,9 +22,19 @@ public static class Backfiller
 
     private static readonly DataLayer dataLayer = new DataLayer();
 
+    public static async void ExecuteWeatherScoreBackfill()
+    {
+        // This thing gets the full list of cities
+        // Calculates weather scores
+        // Inserts it.
+        var calc = new WeatherScoreCalculator();
+        calc.PersistWeatherForCities();
+        Console.WriteLine("Im out here");
+    }
+    
     public static async void Execute()
     {
-        var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : GetCitiesOfInterest();
+        var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
         if(SHOULD_RUN)
         {
             var (start, end) = GetDateRanges();
@@ -35,11 +45,12 @@ public static class Backfiller
                 await FetchFromApi(client, city, url);
             }
             Console.WriteLine("Executing.");
+            foreach (var city in citiesList)
+            {
+                dataLayer.CreateCity(new City(city));
+            }
         }
-        foreach (var city in citiesList)
-        {
-            dataLayer.CreateCity(new City(city));
-        }
+
     }
 
     private static async Task FetchFromApi(HttpClient client, string city, string url)
@@ -100,60 +111,4 @@ public static class Backfiller
         var formattedCity = cityName.Replace(" ", "%20");
         return $"{URI}{formattedCity}/{startDate.ToString()}/{endDate.ToString()}?key={KEY}";
     }
-    
-    public static List<string> GetCitiesOfInterest()
-    {
-        return new List<string>()
-        {
-            "Buenos Aires",
-            "New York City",
-            "San Diego",
-            "San Juan",
-            "Montreal",
-            "Toronto",
-            "Santiago",
-            "Mexico City",
-            "Puerto Vallerta",
-            "Oaxaca",
-            "Montevideo",
-            "Tenerife",
-            "Bogota",
-            "Lima",
-            "Cusco",
-            "Madrid",
-            "Barcelona",
-            "Palma de Mallorca",
-            "La Paz",
-            "Rio De Janeiro",
-            "Sao Paulo",
-            "Praia",
-            "Marrekech",
-            "Malaga",
-            "Sevilla",
-            "Lisbon",
-            "Stockholm",
-            "Copenhagen",
-            "Helsinki",
-            "Berlin",
-            "Dubai",
-            "Kuwait City",
-            "Bangkok", 
-            "Quito",
-            "Denpasar",
-            "Tokyo",
-            "Mykonos",
-            "Athens",
-            "Valencia",
-            "San Sebastian",
-            "Panama City",
-            "Cozumel",
-            "San Miguel de Allende",
-            "Porto",
-            "Mendoza",
-            "San Jose",
-            "Cartagena"
-        };
-    }
-
-
 }
