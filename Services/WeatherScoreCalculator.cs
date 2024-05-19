@@ -14,21 +14,16 @@ public class WeatherScoreCalculator
     {
         _dataLayer = new DataLayer();
     }
-    public Dictionary<City, CityStatWrapper> PersistWeatherForCities(List<City> cities = null)
+    public Dictionary<City, CityStatWrapper> PersistWeatherForCities(List<City> cities)
     {
-        var cityList = cities;
         Dictionary<City, CityStatWrapper> results = new Dictionary<City, CityStatWrapper>();
-        if(cityList == null)
-        {
-            cityList = CityListHelper.GetCitiesOfInterest();
-        }
-        foreach(var city in cityList)
+        foreach(var city in cities)
         {
             var cityName = city.CityName;
             var weatehrHistory = _dataLayer.GetWeatherHistoryForCity(cityName);
-            var weatherScore = CalculateWeatherScore(cityName, weatehrHistory);
-            results[city] = weatherScore;
-            // insert
+            var weatherStats = CalculateWeatherScore(cityName, weatehrHistory);
+            results[city] = weatherStats;
+            _dataLayer.CreateWeatherScoreInfo(weatherStats);
             // refactor for DI
         }
         // var sortedByValue = results.OrderBy(pair => pair.Value.IdealSunshineDays);

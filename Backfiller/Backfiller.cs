@@ -28,7 +28,8 @@ public static class Backfiller
         // Calculates weather scores
         // Inserts it.
         var calc = new WeatherScoreCalculator();
-        calc.PersistWeatherForCities();
+        var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
+        calc.PersistWeatherForCities(citiesList);
         Console.WriteLine("Im out here");
     }
     

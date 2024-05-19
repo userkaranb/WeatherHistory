@@ -108,6 +108,22 @@ public class DataLayer
             UpdateExpression = "SET #TS = :tempScore, #SS = :sunScore, #HS = :humScore, #WS = :weatherScore, #ITD = :idealTempDays, #ISD = :idealSunDays",
             ReturnValues = "UPDATED_NEW" // Specifies that you want to get the new values of the updated attributes
         };
+        try
+        {
+            // Send the update item request
+            var response = _client.UpdateItemAsync(request).Result;
+
+            // Output the updated attributes
+            Console.WriteLine("Updated item:");
+            foreach (var attribute in response.Attributes)
+            {
+                Console.WriteLine($"{attribute.Key}: {attribute.Value.S ?? attribute.Value.N}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating item in DynamoDB: {ex.Message}");
+        }
     }
 
     public async void CreateWeatherHistoryItem(WeatherHistory historyItem)
