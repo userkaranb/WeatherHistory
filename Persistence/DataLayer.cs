@@ -77,6 +77,39 @@ public class DataLayer
        await WriteItem(item);
     }
 
+    public async void CreateWeatherScoreInfo(CityStatWrapper cityStat)
+    {
+        var request = new UpdateItemRequest
+        {
+            TableName = TableName,
+            Key = new Dictionary<string, AttributeValue> {
+                { "PK", new AttributeValue { S = $"CITY#{cityStat.CityName}" } },
+                { "SK", new AttributeValue { S = $"CITY#{cityStat.CityName}" } },
+            },
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                {"#TS", "TempScore"},
+                {"#SS", "SunScore"},
+                {"#HS", "HumScore"},
+                {"#WS", "WeatherScore"},
+                {"#ITD", "IdealTempDays"},
+                {"#ISD", "IdealSunDays"}
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                {":tempScore", new AttributeValue { N = cityStat.TemperatureScore.ToString() }},
+                {":sunScore", new AttributeValue { N = cityStat.SunshineScore.ToString() }},
+                {":humScore", new AttributeValue { N = cityStat.HumidityScore.ToString() }},
+                {":weatherScore", new AttributeValue { N = cityStat.WeatherScore.ToString() }},
+                {":idealTempDays", new AttributeValue { N = cityStat.IdealTempRangeDays.ToString() }},
+                {":idealSunDays", new AttributeValue { N = cityStat.IdealSunshineDays.ToString() }}
+            },
+            // Set the update expression for updating Price and Name
+            UpdateExpression = "SET #TS = :tempScore, #SS = :sunScore, #HS = :humScore, #WS = :weatherScore, #ITD = :idealTempDays, #ISD = :idealSunDays",
+            ReturnValues = "UPDATED_NEW" // Specifies that you want to get the new values of the updated attributes
+        };
+    }
+
     public async void CreateWeatherHistoryItem(WeatherHistory historyItem)
     {
         var formattedHistoryItem = FormatHistoryItem(historyItem);
@@ -112,6 +145,27 @@ public class DataLayer
         try
         {
             var resp = await _client.PutItemAsync(request);
+            Console.WriteLine("Event inserted successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error inserting event: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateItem(Dictionary<string, AttributeValue> key, Dictionary<string, AttributeValueUpdate> item)
+    {
+        var request = new UpdateItemRequest
+        {
+            TableName = TableName,
+            Key = key,
+            AttributeUpdates = item
+        };
+
+        // Execute PutItem request
+        try
+        {
+            var resp = await _client.UpdateItemAsync(request);
             Console.WriteLine("Event inserted successfully.");
         }
         catch (Exception ex)

@@ -24,8 +24,9 @@ public class WeatherScoreCalculator
         }
         foreach(var city in cityList)
         {
-            var weatehrHistory = _dataLayer.GetWeatherHistoryForCity(city.CityName);
-            var weatherScore = CalculateWeatherScore(weatehrHistory);
+            var cityName = city.CityName;
+            var weatehrHistory = _dataLayer.GetWeatherHistoryForCity(cityName);
+            var weatherScore = CalculateWeatherScore(cityName, weatehrHistory);
             results[city] = weatherScore;
             // insert
             // refactor for DI
@@ -38,7 +39,7 @@ public class WeatherScoreCalculator
         return results;
     }
 
-    private CityStatWrapper CalculateWeatherScore(List<WeatherHistory> histories)
+    private CityStatWrapper CalculateWeatherScore(string cityName, List<WeatherHistory> histories)
     {
         // for now, just calculate MAD score for temperature
         var temps = histories.Select(x => (float)x.Temperature).ToList();
@@ -51,7 +52,7 @@ public class WeatherScoreCalculator
         var idealTempDays = temps.Where(temp => temp > 68 && temp < 83);
         var idealSunshineDays = sunshines.Where(sun => sun > 50);
         
-        return new CityStatWrapper(tempScore, sunshineScore, humidityScore, weatherScore, idealTempDays.Count(), idealSunshineDays.Count()); 
+        return new CityStatWrapper(cityName, tempScore, sunshineScore, humidityScore, weatherScore, idealTempDays.Count(), idealSunshineDays.Count()); 
     }
 
     private float CalculateIdealMetric(List<float> metrics, float ideal)
