@@ -13,27 +13,40 @@ using System.ComponentModel;
 using Jubilado;
 using Jubilado.Persistence;
 
-public static class Backfiller
+public interface IBackfiller
+{
+    void ExecuteWeatherScoreBackfill();
+    void Execute();
+}
+
+public class Backfiller : IBackfiller
 {
     const bool SHOULD_RUN = false;
     const bool SHOULD_DRY_RUN = false;
     const string KEY = "YLQ4H9DL7KCFMPEA6PDFU2W59";
     const string URI = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
+    private IDataLayer _dataLayer;
+    private IWeatherScoreCalculator _weatherScoreCalculator;
 
-    private static readonly DataLayer dataLayer = new DataLayer();
-
-    public static async void ExecuteWeatherScoreBackfill()
+    public Backfiller(IDataLayer dataLayer, IWeatherScoreCalculator weatherScoreCalculator)
     {
-        // This thing gets the full list of cities
-        // Calculates weather scores
-        // Inserts it.
-        var calc = new WeatherScoreCalculator();
-        var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
-        calc.PersistWeatherForCities(citiesList);
-        Console.WriteLine("Im out here");
+        _dataLayer = dataLayer;
+        _weatherScoreCalculator = weatherScoreCalculator;
+    }
+
+    public async void ExecuteWeatherScoreBackfill()
+    {
+        if(SHOULD_RUN)
+        {
+            var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
+            _weatherScoreCalculator.PersistWeatherForCities(citiesList);
+            Console.WriteLine("Im out here");
+        }
+        var resp = _dataLayer.GetCity(new City("bUenoS Aires"));
+        Console.WriteLine(resp.WeatherScore);
     }
     
-    public static async void Execute()
+    public async void Execute()
     {
         var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
         if(SHOULD_RUN)
@@ -48,13 +61,13 @@ public static class Backfiller
             Console.WriteLine("Executing.");
             foreach (var city in citiesList)
             {
-                dataLayer.CreateCity(city);
+                _dataLayer.CreateCity(city);
             }
         }
 
     }
 
-    private static async Task FetchFromApi(HttpClient client, string city, string url)
+    private async Task FetchFromApi(HttpClient client, string city, string url)
     {
         try
         {
@@ -65,7 +78,7 @@ public static class Backfiller
             var converted = await ConvertJsonToWeatherHistory(dict, city);
             foreach(var historyItem in converted)
             {
-                dataLayer.CreateWeatherHistoryItem(historyItem);
+                _dataLayer.CreateWeatherHistoryItem(historyItem);
                 // Console.WriteLine($"Item: {historyItem.CityName}-{historyItem.Date}-{historyItem.Humidity}-{historyItem.Sunshine}-{historyItem.Temperature}");
             }
         }

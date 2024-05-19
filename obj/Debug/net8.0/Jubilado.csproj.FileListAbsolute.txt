@@ -29,3 +29,5 @@
 /Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/AWSSDK.Core.dll
 /Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/AWSSDK.DynamoDBv2.dll
 /Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/NodaTime.dll
+/Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/Autofac.dll
+/Users/karanb/Documents/Programs/Jubilado/bin/Debug/net8.0/Autofac.Extensions.DependencyInjection.dll

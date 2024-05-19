@@ -12,7 +12,7 @@ namespace Jubilado.Controllers
         [HttpGet("{cityName}")]
         public JsonResult Get(string cityName)
         {
-            return new JsonResult(new DataLayer().GetCity(cityName));
+            return new JsonResult(new DataLayer().GetCity(new City(cityName)));
         }
 
         [HttpPut()]

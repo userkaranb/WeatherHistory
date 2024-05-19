@@ -5,7 +5,17 @@ using Amazon.Runtime;
 
 namespace Jubilado.Persistence;
 
-public class DataLayer
+public interface IDataLayer
+{
+    public City GetCity(City city);
+    public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
+    void CreateCity(City city);
+    void CreateWeatherScoreInfo(CityStatWrapper cityStat);
+    void CreateWeatherHistoryItem(WeatherHistory historyItem);
+
+}
+
+public class DataLayer : IDataLayer
 {
     private Table _table;
     private AmazonDynamoDBClient _client;
@@ -28,17 +38,16 @@ public class DataLayer
 
     }
 
-    public City GetCity(string cityName)
+    public City GetCity(City city)
     {
-        var cityNameUpper = cityName.ToUpper();
         var queryRequest = new QueryRequest
         {
             TableName = TableName,
             KeyConditionExpression = "PK = :pk AND SK = :sk",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":pk", new AttributeValue { S = $"CITY#{cityNameUpper}" } },
-                { ":sk", new AttributeValue { S = $"CITY#{cityNameUpper}" } }
+                { ":pk", new AttributeValue { S = $"CITY#{city.CityName}" } },
+                { ":sk", new AttributeValue { S = $"CITY#{city.CityName}" } }
             }
         };
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();

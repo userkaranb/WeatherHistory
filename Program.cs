@@ -22,8 +22,10 @@
 */
 
 using Jubilado;
+using Jubilado.Persistence;
 using System;
 using System.Diagnostics;
+using Autofac;
 
 ProcessStartInfo processStartInfo = new ProcessStartInfo
 {
@@ -51,7 +53,20 @@ Console.WriteLine("here");
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
+var autoFacBuilder = new ContainerBuilder();
+autoFacBuilder.RegisterType<DataLayer>().As<IDataLayer>();
+autoFacBuilder.RegisterType<WeatherScoreCalculator>().As<IWeatherScoreCalculator>();
+autoFacBuilder.RegisterType<Backfiller>().As<IBackfiller>();
+var container = autoFacBuilder.Build();
 
+// var host = Host.CreateDefaultBuilder(args)
+//             .ConfigureServices((_, services) =>
+//             {
+//                 // Register your services here. For example:
+//                 services.AddTransient<IDataLayer, DataLayer>();
+//                 services.AddTransient<IWeatherScoreCalculator, WeatherScoreCalculator>();
+//             }).Build();
+// await host.RunAsync();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -78,7 +93,11 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 // Backfiller.Execute();
-Backfiller.ExecuteWeatherScoreBackfill();
+// Backfiller.ExecuteWeatherScoreBackfill();
+
+var backfiller = container.Resolve<IBackfiller>();
+backfiller.ExecuteWeatherScoreBackfill();
+
 
 app.Run();
 

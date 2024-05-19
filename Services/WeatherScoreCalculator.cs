@@ -4,15 +4,20 @@ using Jubilado.Persistence;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
 
-public class WeatherScoreCalculator
+public interface IWeatherScoreCalculator
 {
-    private DataLayer _dataLayer;
+    Dictionary<City, CityStatWrapper> PersistWeatherForCities(List<City> cities);
+}
+
+public class WeatherScoreCalculator : IWeatherScoreCalculator
+{
+    private IDataLayer _dataLayer;
     private const float IDEAL_TEMP = 75f;
     private const float IDEAL_SUN = 100f;
     private const float IDEAL_HUM = 50f;
-    public WeatherScoreCalculator()
+    public WeatherScoreCalculator(IDataLayer dataLayer)
     {
-        _dataLayer = new DataLayer();
+        _dataLayer = dataLayer;
     }
     public Dictionary<City, CityStatWrapper> PersistWeatherForCities(List<City> cities)
     {
