@@ -5,15 +5,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Jubilado.Controllers
 {
+    
     [Route("api/[controller]")]
     [ApiController]
     public class CityController : ControllerBase
     {
-        
+        private readonly ICityCreatorService _cityCreatorService;
+        private readonly IDataLayer _dataLayer;
+        public CityController(ICityCreatorService cityCreatorService, IDataLayer dataLayer)
+        {
+            _cityCreatorService = cityCreatorService;
+            _dataLayer = dataLayer;
+        }
+
         [HttpGet("{cityName}")]
         public JsonResult Get(string cityName)
         {
-            return new JsonResult(new DataLayer().GetCity(new City(cityName)));
+            return new JsonResult(_dataLayer.GetCity(new City(cityName)));
         }
 
         [HttpPut()]
@@ -21,7 +29,7 @@ namespace Jubilado.Controllers
         {
             var cityList = request.Select(city => new City(city.CityName)).ToList();
             // DI me
-            await new CityCreatorService(new DataLayer()).CreateCity(cityList);
+            await _cityCreatorService.CreateCity(cityList);
             return Ok("done");
         }
 
@@ -30,7 +38,7 @@ namespace Jubilado.Controllers
         {
             if (ValidateWeatherHistoryObject(historyItem))
             {
-                 new DataLayer().CreateWeatherHistoryItem(historyItem);
+                 _dataLayer.CreateWeatherHistoryItem(historyItem);
                 return Ok("created.");       
             }
             else
@@ -42,7 +50,7 @@ namespace Jubilado.Controllers
         [HttpGet("{cityName}/weatherhistory")]
         public JsonResult GetWeatherHistory(string cityName)
         {
-            return new JsonResult(new DataLayer().GetWeatherHistoryForCity(cityName));
+            return new JsonResult(_dataLayer.GetWeatherHistoryForCity(cityName));
         }
 
         private bool ValidateWeatherHistoryObject(WeatherHistory historyItem)

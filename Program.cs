@@ -26,6 +26,7 @@ using Jubilado.Persistence;
 using System;
 using System.Diagnostics;
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 
 ProcessStartInfo processStartInfo = new ProcessStartInfo
 {
@@ -47,17 +48,26 @@ string output = process.StandardOutput.ReadToEnd();
 
 // Wait for the process to exit
 process.WaitForExit();
-var builder = WebApplication.CreateBuilder(args);
-Console.WriteLine("here");
-// Add services to the container.
-builder.Services.AddRazorPages();
-
-var app = builder.Build();
 var autoFacBuilder = new ContainerBuilder();
 autoFacBuilder.RegisterType<DataLayer>().As<IDataLayer>();
 autoFacBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
 autoFacBuilder.RegisterType<Backfiller>().As<IBackfiller>();
 var container = autoFacBuilder.Build();
+
+var builder = WebApplication.CreateBuilder(args);
+// Add services to the container.
+builder.Services.AddRazorPages();
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
+    .ConfigureContainer<ContainerBuilder>(containerBuilder =>
+    {
+        // Register your Autofac services here
+        containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
+        containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
+    });
+
+
+var app = builder.Build();
+
 
 if (!app.Environment.IsDevelopment())
 {
