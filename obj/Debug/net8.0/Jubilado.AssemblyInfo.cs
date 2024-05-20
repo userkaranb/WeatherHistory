@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Jubilado")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d1c441e6b57f140f150eacc58c168c84552f75fa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e9a553ecc60b7bb0e9a4231406a952d259a509b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("Jubilado")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Jubilado")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

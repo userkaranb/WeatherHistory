@@ -17,14 +17,11 @@ namespace Jubilado.Controllers
         }
 
         [HttpPut()]
-        public IActionResult CreatCity([FromBody] CreateCityRequest request)
+        public async Task<IActionResult> CreatCity([FromBody] List<CreateCityRequest> request)
         {
-            var cityList = new List<City>()
-            {
-                new City(request.CityName)
-            };
+            var cityList = request.Select(city => new City(city.CityName)).ToList();
             // DI me
-            new CityCreatorService(new DataLayer()).CreateCity(cityList);
+            await new CityCreatorService(new DataLayer()).CreateCity(cityList);
             return Ok("done");
         }
 

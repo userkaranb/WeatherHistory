@@ -51,7 +51,7 @@ public class DataLayer : IDataLayer
             }
         };
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
-        var toDict = queryResponse.Items.First().ToDictionary<string, AttributeValue>();
+        var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
     }
 

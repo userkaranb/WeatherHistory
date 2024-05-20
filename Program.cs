@@ -86,8 +86,8 @@ app.MapRazorPages();
 // Backfiller.Execute();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
-var backfiller = container.Resolve<IBackfiller>();
-backfiller.ExecuteWeatherScoreBackfill();
+// var backfiller = container.Resolve<IBackfiller>();
+// backfiller.ExecuteWeatherScoreBackfill();
 
 
 app.Run();

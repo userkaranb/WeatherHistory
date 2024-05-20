@@ -34,8 +34,10 @@ public class CityCreatorService : ICityCreatorService
     
     public async Task CreateCity(List<City> cities)
     {
-        await DownloadAndPersistWeatherHistoryItems(cities);
-        var cityToCityStatMappings = GetWeatherStatsForCities(cities);
+        var cityKeyToCityValue = cities.Select(x => (x, _dataLayer.GetCity(x))).ToDictionary<City, City>();
+        var citiesThatDontHaveValues = cityKeyToCityValue.Where(x => City.IsCityEmpty(x.Value)).Select(x => x.Key).ToList();
+        await DownloadAndPersistWeatherHistoryItems(citiesThatDontHaveValues);
+        var cityToCityStatMappings = GetWeatherStatsForCities(citiesThatDontHaveValues);
         foreach(var city in cityToCityStatMappings.Keys)
         {
             city.CityStats = cityToCityStatMappings[city];

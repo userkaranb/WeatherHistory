@@ -7,6 +7,10 @@ public class ItemFactory
 {
     public static City ToCity(Dictionary<string, AttributeValue> values)
     {
+        if(!values.ContainsKey("CityName"))
+        {
+          return City.EmptyCity();
+        }
         string cityName = "";
         float weatherScore = -1f;
         float tempScore = -1f;
@@ -22,22 +26,22 @@ public class ItemFactory
                   cityName = values["CityName"].S;
                   break;
                 case "WeatherScore":
-                  weatherScore = float.Parse(values["WeatherScore"].N);
+                  weatherScore = float.Parse(values["WeatherScore"].S);
                   break;
                 case "TempScore":
-                  tempScore = float.Parse(values["TempScore"].N);
+                  tempScore = float.Parse(values["TempScore"].S);
                   break;
                 case "SunScore":
-                  sunScore = float.Parse(values["SunScore"].N);
+                  sunScore = float.Parse(values["SunScore"].S);
                   break;
                 case "HumScore":
-                  humScore = float.Parse(values["HumScore"].N);
+                  humScore = float.Parse(values["HumScore"].S);
                   break;
                 case "IdealTempDays":
-                  idealTempDays = int.Parse(values["IdealTempDays"].N);
+                  idealTempDays = int.Parse(values["IdealTempDays"].S);
                   break;
                 case "IdealSunDays":
-                  idealSunDays = int.Parse(values["IdealSunDays"].N);
+                  idealSunDays = int.Parse(values["IdealSunDays"].S);
                   break;
                 case null:
                     continue;
