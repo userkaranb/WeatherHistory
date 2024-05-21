@@ -52,11 +52,7 @@ public class CityCreatorService : ICityCreatorService
         {
             var url = GetFormattedUrl(city.CityName, start, end);
             var historyItems = await FetchFromApi(city.CityName, url);
-            // TODO: Persist in bulk
-            foreach(var historyItem in historyItems)
-            {
-                _dataLayer.CreateWeatherHistoryItem(historyItem);
-            }
+            _dataLayer.CreateWeatherHistoryItems(historyItems);
         }
     }
 

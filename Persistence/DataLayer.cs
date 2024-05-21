@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace Jubilado.Persistence;
 
@@ -12,6 +13,7 @@ public interface IDataLayer
     void CreateCity(City city);
     void CreateWeatherScoreInfo(CityStatWrapper cityStat);
     void CreateWeatherHistoryItem(WeatherHistory historyItem);
+    void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
 
 }
 
@@ -51,6 +53,7 @@ public class DataLayer : IDataLayer
             }
         };
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        Console.WriteLine(city.CityName);
         var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
     }
@@ -143,24 +146,28 @@ public class DataLayer : IDataLayer
     public async void CreateWeatherHistoryItem(WeatherHistory historyItem)
     {
         var formattedHistoryItem = FormatHistoryItem(historyItem);
-        var item = new Dictionary<string, AttributeValue>
-        {
-            { "PK", new AttributeValue { S = $"CITY#{formattedHistoryItem.CityName}" } },
-            { "SK", new AttributeValue { S = $"WEATHERHISTORY#{formattedHistoryItem.Date.ToString()}" } },
-            { "CityName", new AttributeValue { S = $"{formattedHistoryItem.CityName}" } },
-            { "Date", new AttributeValue { S = formattedHistoryItem.Date.ToString() } },
-            { "Temperature", new AttributeValue { S = formattedHistoryItem.Temperature.ToString() } },
-            { "Sunshine", new AttributeValue { S = formattedHistoryItem.Sunshine.ToString() } },
-            { "Humidity", new AttributeValue { S = formattedHistoryItem.Humidity.ToString() } },
-        };
-
-        await WriteItem(item);
+        await WriteItem(formattedHistoryItem);
     }
 
-    private static WeatherHistory FormatHistoryItem(WeatherHistory historyItem)
+    public async void CreateWeatherHistoryItems(List<WeatherHistory> historyItems)
+    {
+        var historyItemsToWrite = historyItems.Select(x => FormatHistoryItem(x)).ToList();
+        await BatchWriteItem(historyItemsToWrite);
+    }
+
+    private static Dictionary<string, AttributeValue> FormatHistoryItem(WeatherHistory historyItem)
     {
         var cityName = historyItem.CityName.ToUpper().Replace(" ", "-");
-        return new WeatherHistory(cityName, historyItem.Date, historyItem.Humidity, historyItem.Temperature, historyItem.Sunshine);
+        return new Dictionary<string, AttributeValue>
+        {
+            { "PK", new AttributeValue { S = $"CITY#{historyItem.CityName}" } },
+            { "SK", new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
+            { "CityName", new AttributeValue { S = $"{cityName}" } },
+            { "Date", new AttributeValue { S = historyItem.Date.ToString() } },
+            { "Temperature", new AttributeValue { S = historyItem.Temperature.ToString() } },
+            { "Sunshine", new AttributeValue { S = historyItem.Sunshine.ToString() } },
+            { "Humidity", new AttributeValue { S = historyItem.Humidity.ToString() } },
+        };
     }
 
     private async Task WriteItem(Dictionary<string, AttributeValue> item)
@@ -180,6 +187,34 @@ public class DataLayer : IDataLayer
         catch (Exception ex)
         {
             Console.WriteLine($"Error inserting event: {ex.Message}");
+        }
+    }
+
+    private async Task BatchWriteItem(List<Dictionary<string, AttributeValue>> items)
+    {
+        var writeItems = items.Select(kvp => new WriteRequest{
+            PutRequest = new PutRequest(kvp)
+        }).ToList();
+        var chunkedItems = writeItems.Chunk(25).ToList();
+        foreach (var chunk in chunkedItems)
+        {
+            Console.WriteLine("Processing Chunk");
+            var requestItems = new Dictionary<string, List<WriteRequest>>()
+            {
+                {_table.TableName, chunk.ToList()}
+            };
+            BatchWriteItemRequest request = new BatchWriteItemRequest(){
+                RequestItems = requestItems
+            };
+             try
+            {
+                var resp = await _client.BatchWriteItemAsync(request);
+                Console.WriteLine("Event inserted successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inserting event: {ex.Message}");
+            }
         }
     }
 

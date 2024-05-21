@@ -26,22 +26,22 @@ public class ItemFactory
                   cityName = values["CityName"].S;
                   break;
                 case "WeatherScore":
-                  weatherScore = float.Parse(values["WeatherScore"].S);
+                  weatherScore = GetValue<float>(values["WeatherScore"]);
                   break;
                 case "TempScore":
-                  tempScore = float.Parse(values["TempScore"].S);
+                  tempScore = GetValue<float>(values["TempScore"]);
                   break;
                 case "SunScore":
-                  sunScore = float.Parse(values["SunScore"].S);
+                  sunScore = GetValue<float>(values["SunScore"]);
                   break;
                 case "HumScore":
-                  humScore = float.Parse(values["HumScore"].S);
+                  humScore = GetValue<float>(values["HumScore"]);
                   break;
                 case "IdealTempDays":
-                  idealTempDays = int.Parse(values["IdealTempDays"].S);
+                  idealTempDays = GetValue<int>(values["IdealTempDays"]);
                   break;
                 case "IdealSunDays":
-                  idealSunDays = int.Parse(values["IdealSunDays"].S);
+                  idealSunDays = GetValue<int>(values["IdealSunDays"]);
                   break;
                 case null:
                     continue;
@@ -66,13 +66,13 @@ public class ItemFactory
                   cityName = values["CityName"].S;
                   break;
                 case "Humidity":
-                  humidity = double.Parse(values["Humidity"].S);
+                  humidity = GetValue<double>(values["Humidity"]);
                   break;
                 case "Sunshine":
-                  sunshine = double.Parse(values["Sunshine"].S);
+                  sunshine = GetValue<double>(values["Sunshine"]);
                   break;
                 case "Temperature":
-                  temperature = double.Parse(values["Temperature"].S);
+                  temperature = GetValue<double>(values["Temperature"]);
                   break;
                 case "Date":
                   date = values["Date"].S;
@@ -83,5 +83,11 @@ public class ItemFactory
         }
         return new WeatherHistory(cityName, date, humidity, temperature, sunshine);
     }
+
+  private static T GetValue<T>(AttributeValue val)
+  {
+    string stringValue = val.S ?? val.N; // Assuming either S or N is not null.
+    return (T)Convert.ChangeType(stringValue, typeof(T));
+  }
 
 }

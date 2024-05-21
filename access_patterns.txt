@@ -42,3 +42,15 @@ Move all full table scan stuff to cache / DAX
 
 
 AGGSTAT#CITYID   CITYID
+
+Notes about APIs
+
+API to get the warmest weather  (cities, weather history, offline job that computes MAD and puts it in a weather object) - weather.visualcrossing
+  EX: https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/buenos%20aires/2024-5-13/2024-5-14?key=YLQ4H9DL7KCFMPEA6PDFU2W59
+      https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/buenos%20aires/2023-01-01/2023-01-05/key=YLQ4H9DL7KCFMPEA6PDFU2W59
+API to get the safest cities (cities, and a safety score of some sort) -> CAN use economist, but not requirement
+API to get the cheapest flights (cities, flight history if they have it) -> scrape kayak by fetching airport codes based off cities
+API to get median home info (median price, medin square footage) -> https://rapidapi.com/ditno-ditno-default/api/cities-cost-of-living1
+API to get nightlife score - https://www.geoapify.com/pricing-details 
+API to get countries with retirement rules for each - not requirement
+Subscribe to a city, and anytime theres an article in cnn about this city, get a notification

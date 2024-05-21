@@ -15,13 +15,13 @@ using Jubilado.Persistence;
 
 public interface IBackfiller
 {
-    void ExecuteWeatherScoreBackfill();
-    Task Execute();
+    Task Execute(List<string>? cityList);
+    void Foo();
 }
 
 public class Backfiller : IBackfiller
 {
-    const bool SHOULD_RUN = false;
+    const bool SHOULD_RUN = true;
     const bool SHOULD_DRY_RUN = false;
     const string KEY = "YLQ4H9DL7KCFMPEA6PDFU2W59";
     const string URI = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
@@ -34,21 +34,18 @@ public class Backfiller : IBackfiller
         _cityCreatorService = cityCreatorService;
     }
 
-    public async void ExecuteWeatherScoreBackfill()
+    public void Foo()
     {
-        if(SHOULD_RUN)
-        {
-            var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
-            _cityCreatorService.CreateCity(citiesList);
-            Console.WriteLine("Im out here");
-        }
-        var resp = _dataLayer.GetCity(new City("bUenoS Aires"));
-        Console.WriteLine(resp.CityStats?.WeatherScore);
+        Console.WriteLine("here.");
+        Console.WriteLine(_dataLayer.GetType().ToString());
     }
     
-    public async Task Execute()
+    public async Task Execute(List<string>? cityList = null)
     {
-        var citiesList = SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest();
+
+        var citiesList = cityList == null ? 
+        (SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest()) : 
+        cityList.Select(cityString => new City(cityString)).ToList();
         if(SHOULD_RUN)
         {
             await _cityCreatorService.CreateCity(citiesList);
