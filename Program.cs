@@ -63,6 +63,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
         // Register your Autofac services here
         containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
         containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
+        containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
     });
 
 
@@ -96,8 +97,14 @@ app.MapRazorPages();
 // Backfiller.Execute();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
-var backfiller = container.Resolve<IBackfiller>();
-backfiller.CreateWeatherScorePK();
+// var backfiller = container.Resolve<IBackfiller>();
+// backfiller.CreateWeatherScorePK();
+
+// TO DO:
+// CREATE ENDPOINTS TO GET CITY INFO BY WEATHER SCORE (SEGMENT BY CALLERS AND COMPARE)
+// CREATE A DELETE CITY ENDPOINT THAT DELETES ALL INFO, AND WEATHER HISTORY
+// ADD ONE MORE THING, LIKE IDEAL TEMP DAYS
+// PRODUCTIONIZE APP (HIDE DB CREDENTIALS, WRITE TESTS, CLEAN UP WARNINGS)
 
 
 app.Run();

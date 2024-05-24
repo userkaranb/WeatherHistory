@@ -37,12 +37,8 @@ public class Backfiller : IBackfiller
 
     public async Task CreateWeatherScorePK()
     {
-        // Get all city names and weather scores
         var combos = await _dataLayer.GetAllCityWeatherScoreCombos();
-        // call data layer to insert a bunch of items (new keys)
         _dataLayer.CreateWeatherScoreKey(combos);
-        // update the CreateCity write to also write the new key in a transaction.
-        // Create the getters. One that uses the new key, the other that does the scan and compares them.
     }
 
     public async Task Execute(List<string>? cityList = null)

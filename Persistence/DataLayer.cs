@@ -50,7 +50,14 @@ public class DataLayer : IDataLayer
         // Convert all city names to cities
         // Get all City Objects to get weather scores
         // in another function, write the new keys.
-        return await GetAllCityWeatherScoreCombosUsingScan();
+        var useNewCode = false;
+        if(!useNewCode)
+        {
+            var scannedResponse = await GetAllCityWeatherScoreCombosUsingScan();
+            return scannedResponse.OrderBy(x => x.WeatherScore).ToList();
+        }
+
+        return null;
     }
 
     public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)

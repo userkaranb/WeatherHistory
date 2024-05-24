@@ -12,10 +12,12 @@ namespace Jubilado.Controllers
     {
         private readonly ICityCreatorService _cityCreatorService;
         private readonly IDataLayer _dataLayer;
-        public CityController(ICityCreatorService cityCreatorService, IDataLayer dataLayer)
+        private readonly ICityGetterService _cityGetterService;
+        public CityController(ICityCreatorService cityCreatorService, IDataLayer dataLayer, ICityGetterService cityGetterService)
         {
             _cityCreatorService = cityCreatorService;
             _dataLayer = dataLayer;
+            _cityGetterService = cityGetterService;
         }
 
         [HttpGet("{cityName}")]
@@ -37,6 +39,13 @@ namespace Jubilado.Controllers
         public JsonResult GetWeatherHistory(string cityName)
         {
             return new JsonResult(_dataLayer.GetWeatherHistoryForCity(cityName));
+        }
+
+        [HttpGet("topweatherscores")]
+        public async Task<JsonResult> GetTopWeatherScores()
+        {
+            var response = await _cityGetterService.GetTopWeatherScoreCities();
+            return new JsonResult(response);
         }
 
         private bool ValidateWeatherHistoryObject(WeatherHistory historyItem)
