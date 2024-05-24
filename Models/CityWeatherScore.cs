@@ -13,7 +13,12 @@ public class CityWeatherScore : Item
     public CityWeatherScore(string cityName, float weatherScore)
     {
         CityName = cityName;
-        WeatherScore = weatherScore;
+        WeatherScore = (float)Math.Round(weatherScore, 2);
+    }
+
+    public string GetStringKeyForWeatherScore()
+    {
+        return WeatherScore.ToString("F2");
     }
 
     public override string ToString()

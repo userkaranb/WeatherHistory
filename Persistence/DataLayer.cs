@@ -17,6 +17,7 @@ public interface IDataLayer
     void CreateWeatherScoreInfo(CityStatWrapper cityStat);
     void CreateWeatherHistoryItem(WeatherHistory historyItem);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
+    void CreateWeatherScoreKey(List<CityWeatherScore> cityScores);
 
 }
 
@@ -50,6 +51,12 @@ public class DataLayer : IDataLayer
         // Get all City Objects to get weather scores
         // in another function, write the new keys.
         return await GetAllCityWeatherScoreCombosUsingScan();
+    }
+
+    public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
+    {
+        var weatherScores = cityWeatherScores.Select(x => FormatCityWeatherScore(x)).ToList();
+        await BatchWriteItem(weatherScores);
     }
 
     private void GetAllSortedWeatherScores()
@@ -218,6 +225,17 @@ public class DataLayer : IDataLayer
         await BatchWriteItem(historyItemsToWrite);
     }
 
+    private static Dictionary<string, AttributeValue> FormatCityWeatherScore(CityWeatherScore weatherScore)
+    {
+        var cityName = weatherScore.CityName.ToUpper().Replace(" ", "-");
+        return new Dictionary<string, AttributeValue>
+        {
+            { "PK", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
+            { "SK", new AttributeValue { S = $"{weatherScore.GetStringKeyForWeatherScore().PadLeft(10, '0')}#CITY#{cityName}" } },
+            { "CityName", new AttributeValue { S = $"{cityName}" } },
+        };
+    }
+    
     private static Dictionary<string, AttributeValue> FormatHistoryItem(WeatherHistory historyItem)
     {
         var cityName = historyItem.CityName.ToUpper().Replace(" ", "-");
