@@ -161,7 +161,8 @@ public class DataLayer : IDataLayer
             { "WeatherScore", new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
         };
 
-       await WriteItem(item);
+       var weatherScoreItem = FormatCityWeatherScore(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
+       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem});
     }
 
     public async void CreateWeatherScoreInfo(CityStatWrapper cityStat)
@@ -268,6 +269,26 @@ public class DataLayer : IDataLayer
         catch (Exception ex)
         {
             Console.WriteLine($"Error inserting event: {ex.Message}");
+        }
+    }
+
+    private async Task TransactWriteItem(List<Dictionary<string, AttributeValue>> items)
+    {
+        var putRequests = items.Select(item => new Put{Item = item, TableName = TableName}).ToList();
+        var transactItems = putRequests.Select(item => new TransactWriteItem{Put = item}).ToList();
+        var request = new TransactWriteItemsRequest
+        {
+            TransactItems = transactItems
+        };
+
+        try
+        {
+            var response = await _client.TransactWriteItemsAsync(request);
+            Console.WriteLine("Transaction succeeded.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Transaction failed: {ex.Message}");
         }
     }
 

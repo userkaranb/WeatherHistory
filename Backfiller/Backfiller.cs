@@ -39,8 +39,8 @@ public class Backfiller : IBackfiller
     {
         // Get all city names and weather scores
         var combos = await _dataLayer.GetAllCityWeatherScoreCombos();
-        _dataLayer.CreateWeatherScoreKey(combos);
         // call data layer to insert a bunch of items (new keys)
+        _dataLayer.CreateWeatherScoreKey(combos);
         // update the CreateCity write to also write the new key in a transaction.
         // Create the getters. One that uses the new key, the other that does the scan and compares them.
     }

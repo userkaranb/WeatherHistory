@@ -3,12 +3,6 @@ using Jubilado;
 using Jubilado.Persistence;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
-using System.Collections;
-using Amazon.DynamoDBv2.Model.Internal.MarshallTransformations;
-using Amazon.DynamoDBv2.Model;
-
 
 public interface ICityCreatorService
 {
