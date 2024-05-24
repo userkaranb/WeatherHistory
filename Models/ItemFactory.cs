@@ -84,6 +84,27 @@ public class ItemFactory
         return new WeatherHistory(cityName, date, humidity, temperature, sunshine);
     }
 
+    public static CityWeatherScore ToCityWeatherScore(Dictionary<string, AttributeValue> values)
+    {
+       string cityName = "";
+       float weatherScore = -1f;
+        foreach(var kvp in values)
+        {
+            switch(kvp.Key)
+            {
+                case "CityName":
+                  cityName = values["CityName"].S;
+                  break;
+                case "WeatherScore":
+                  weatherScore = GetValue<float>(values["WeatherScore"]);
+                  break;
+                case null:
+                    continue;
+            }
+        }
+        return new CityWeatherScore(cityName, weatherScore);
+    }
+
   private static T GetValue<T>(AttributeValue val)
   {
     string stringValue = val.S ?? val.N; // Assuming either S or N is not null.

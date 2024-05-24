@@ -33,20 +33,6 @@ namespace Jubilado.Controllers
             return Ok("done");
         }
 
-        [HttpPut("weatherhistory")]
-        public IActionResult CreateWeatherHistory([FromBody] WeatherHistory historyItem)
-        {
-            if (ValidateWeatherHistoryObject(historyItem))
-            {
-                 _dataLayer.CreateWeatherHistoryItem(historyItem);
-                return Ok("created.");       
-            }
-            else
-            {
-                return BadRequest($"Date for History Item {historyItem.Date} is not formatted as YYYY-MM-DD");
-            }
-        }
-
         [HttpGet("{cityName}/weatherhistory")]
         public JsonResult GetWeatherHistory(string cityName)
         {

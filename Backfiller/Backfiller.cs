@@ -16,7 +16,8 @@ using Jubilado.Persistence;
 public interface IBackfiller
 {
     Task Execute(List<string>? cityList);
-    void Foo();
+
+    Task CreateWeatherScorePK();
 }
 
 public class Backfiller : IBackfiller
@@ -34,12 +35,16 @@ public class Backfiller : IBackfiller
         _cityCreatorService = cityCreatorService;
     }
 
-    public void Foo()
+    public async Task CreateWeatherScorePK()
     {
-        Console.WriteLine("here.");
-        Console.WriteLine(_dataLayer.GetType().ToString());
+        // Get all city names and weather scores
+        // call data layer to insert a bunch of items (new keys)
+        // update the CreateCity write to also write the new key in a transaction.
+        // Create the getters. One that uses the new key, the other that does the scan and compares them.
+        var combos = await _dataLayer.GetAllCityWeatherScoreCombos();
+        combos.ForEach(x => Console.WriteLine(x.ToString()));
     }
-    
+
     public async Task Execute(List<string>? cityList = null)
     {
 

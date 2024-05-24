@@ -3,12 +3,15 @@ using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
 using Microsoft.AspNetCore.Http.Features;
+using System.Diagnostics;
+
 
 namespace Jubilado.Persistence;
 
 public interface IDataLayer
 {
     public City GetCity(City city);
+    public Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos();
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
     void CreateWeatherScoreInfo(CityStatWrapper cityStat);
@@ -40,6 +43,48 @@ public class DataLayer : IDataLayer
 
     }
 
+    public async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos()
+    {
+        // Get all city names (can either do scan, OR GSI, time each)
+        // Convert all city names to cities
+        // Get all City Objects to get weather scores
+        // in another function, write the new keys.
+        return await GetAllCityWeatherScoreCombosUsingScan();
+    }
+
+    private void GetAllSortedWeatherScores()
+    {
+        // option 1: use the new PK cretaed by the backfill
+        // option 2: create a new function that gets all objects where a PK is like something and SK is like something
+    }
+
+    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingScan()
+    {
+        var stopwatch = new Stopwatch();
+        List<CityWeatherScore> cityScores = new List<CityWeatherScore>();
+        stopwatch.Start();
+        var scanRequest = new ScanRequest
+        {
+            TableName = TableName,
+            FilterExpression = "begins_with(SK, :skPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":skPrefix", new AttributeValue { S = "CITY#" } }
+            },
+            ProjectionExpression = "CityName, WeatherScore"
+        };
+
+        var scanResponse = await _client.ScanAsync(scanRequest);
+        Console.WriteLine(scanResponse.Count);
+        foreach (var item in scanResponse.Items)
+        {
+            cityScores.Add(ItemFactory.ToCityWeatherScore(item));
+        }
+        stopwatch.Stop();
+        Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+        return cityScores;
+    }
+
     public City GetCity(City city)
     {
         var queryRequest = new QueryRequest
@@ -56,6 +101,24 @@ public class DataLayer : IDataLayer
         Console.WriteLine(city.CityName);
         var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
+    }
+
+    public List<City> GetWeatherScoreRankings()
+    {
+        var useGsi = false;
+        if(useGsi)
+        {
+            // Create a new PK called: CityWeatherScore
+            // SortKeys are <WeatherScoreAmount>#CityName
+        }
+        else
+        {
+            // Get all Cities
+            // Sort them by WeatherScore
+
+        }
+        return new List<City>();
+
     }
 
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName)
