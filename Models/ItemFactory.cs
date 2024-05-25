@@ -117,6 +117,27 @@ public class ItemFactory
         return new CityWeatherScore(cityName, weatherScore);
     }
 
+    public static CityIdealSunDays ToCityIdealSunDays(Dictionary<string, AttributeValue> values)
+    {
+       string cityName = "";
+       int idealSunDays = -1;
+        foreach(var kvp in values)
+        {
+            switch(kvp.Key)
+            {
+                case "CityName":
+                  cityName = values["CityName"].S;
+                  break;
+                case "IdealSunDays":
+                  idealSunDays = GetValue<int>(values["IdealSunDays"]);
+                  break;
+                case null:
+                    continue;
+            }
+        }
+        return new CityIdealSunDays(cityName, idealSunDays);
+    }
+
   private static T GetValue<T>(AttributeValue val)
   {
     string stringValue = val.S ?? val.N; // Assuming either S or N is not null.

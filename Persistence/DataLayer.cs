@@ -13,6 +13,7 @@ public interface IDataLayer
 {
     public City GetCity(City city);
     public Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos();
+    public Task<List<CityIdealSunDays>> GetAllIdealSunDaysCombos();
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
     void DeleteCity(City city);
@@ -20,6 +21,7 @@ public interface IDataLayer
     void CreateWeatherHistoryItem(WeatherHistory historyItem);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateWeatherScoreKey(List<CityWeatherScore> cityScores);
+    void CreateIdealSunDaysScoreKey(List<CityIdealSunDays> cityScores);
     void DeleteWeatherSortKey(string cityName);
 
 }
@@ -49,24 +51,39 @@ public class DataLayer : IDataLayer
 
     public async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos()
     {
-        // Get all city names (can either do scan, OR GSI, time each)
-        // Convert all city names to cities
-        // Get all City Objects to get weather scores
-        // in another function, write the new keys.
         var useNewCode = true;
         if(!useNewCode)
         {
-            var scannedResponse = await GetAllCityWeatherScoreCombosUsingScan();
+            var scannedResponse = await GetAllCityWeatherScoreCombosUsingScan("CityName, WeatherScore");
             return scannedResponse.OrderBy(x => x.WeatherScore).ToList();
         }
 
         return await GetAllCityWeatherScoreCombosUsingNewKey();
     }
 
+    public async Task<List<CityIdealSunDays>> GetAllIdealSunDaysCombos()
+    {
+        var useNewCode = false;
+        if(!useNewCode)
+        {
+            var scannedResponse = await GetAllCityIdealSunDaysCombosUsingScan("CityName, IdealSunDays");
+            return scannedResponse.OrderBy(x => x.IdealSunDays).ToList();
+        }
+
+        return null;
+    }
+
     public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
     {
         var weatherScores = cityWeatherScores.Select(x => FormatCityWeatherScore(x)).ToList();
         await BatchWriteItem(weatherScores);
+    }
+
+    public async void CreateIdealSunDaysScoreKey(List<CityIdealSunDays> citySunScores)
+    {
+        var sunScores = citySunScores.Select(x => FormatCityIdealSunDays(x)).ToList();
+        await BatchWriteItem(sunScores);
+
     }
 
     public async void DeleteCity(City city)
@@ -159,23 +176,12 @@ public class DataLayer : IDataLayer
             }).ToList();
     }
 
-    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingScan()
+    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingScan(string projectionExpressionFields)
     {
         var stopwatch = new Stopwatch();
         List<CityWeatherScore> cityScores = new List<CityWeatherScore>();
         stopwatch.Start();
-        var scanRequest = new ScanRequest
-        {
-            TableName = TableName,
-            FilterExpression = "begins_with(SK, :skPrefix)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":skPrefix", new AttributeValue { S = "CITY#" } }
-            },
-            ProjectionExpression = "CityName, WeatherScore"
-        };
-
-        var scanResponse = await _client.ScanAsync(scanRequest);
+        ScanResponse scanResponse = await PerformScan(projectionExpressionFields);
         Console.WriteLine(scanResponse.Count);
         foreach (var item in scanResponse.Items)
         {
@@ -184,6 +190,39 @@ public class DataLayer : IDataLayer
         stopwatch.Stop();
         Console.WriteLine($"Elapsed time scanning: {stopwatch.ElapsedMilliseconds} ms");
         return cityScores;
+    }
+
+    private async Task<List<CityIdealSunDays>> GetAllCityIdealSunDaysCombosUsingScan(string projectionExpressionFields)
+    {
+        var stopwatch = new Stopwatch();
+        List<CityIdealSunDays> cityScores = new List<CityIdealSunDays>();
+        stopwatch.Start();
+        ScanResponse scanResponse = await PerformScan(projectionExpressionFields);
+        Console.WriteLine(scanResponse.Count);
+        foreach (var item in scanResponse.Items)
+        {
+            cityScores.Add(ItemFactory.ToCityIdealSunDays(item));
+        }
+        stopwatch.Stop();
+        Console.WriteLine($"Elapsed time scanning: {stopwatch.ElapsedMilliseconds} ms");
+        return cityScores;
+    }
+
+    private async Task<ScanResponse> PerformScan(string projectionExpressionFields)
+    {
+        var scanRequest = new ScanRequest
+        {
+            TableName = TableName,
+            FilterExpression = "begins_with(SK, :skPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":skPrefix", new AttributeValue { S = "CITY#" } }
+            },
+            ProjectionExpression = projectionExpressionFields
+        };
+
+        var scanResponse = await _client.ScanAsync(scanRequest);
+        return scanResponse;
     }
 
     private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingNewKey()
@@ -258,7 +297,8 @@ public class DataLayer : IDataLayer
         };
 
        var weatherScoreItem = FormatCityWeatherScore(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
-       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem});
+       var sunDaysItem = FormatCityIdealSunDays(new CityIdealSunDays(city.CityName, city.CityStats.IdealSunshineDays));
+       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem, sunDaysItem});
     }
 
     public async void CreateWeatherScoreInfo(CityStatWrapper cityStat)
@@ -330,6 +370,16 @@ public class DataLayer : IDataLayer
             { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
             { "SK", new AttributeValue { S = $"WEATHERSCORE#{weatherScore.GetStringKeyForWeatherScore().PadLeft(10, '0')}#CITY#{cityName}" } },
             { "CityName", new AttributeValue { S = $"{cityName}" } },
+        };
+    }
+
+    private static Dictionary<string, AttributeValue> FormatCityIdealSunDays(CityIdealSunDays cityIdealSunDays)
+    {
+        return new Dictionary<string, AttributeValue>
+        {
+            { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
+            { "SK", new AttributeValue { S = $"IDEALSUNDAYS#{cityIdealSunDays.IdealSunDays.ToString("D4")}#CITY#{cityIdealSunDays.CityName}" } },
+            { "CityName", new AttributeValue { S = $"{cityIdealSunDays.CityName}" } },
         };
     }
     

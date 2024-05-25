@@ -98,7 +98,7 @@ app.MapRazorPages();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
 var backfiller = container.Resolve<IBackfiller>();
-backfiller.CreateWeatherScorePK();
+backfiller.CreateIdealTempAndSunDaysSk();
 
 // TO DO:
 // ADD ONE MORE THING, LIKE IDEAL TEMP DAYS

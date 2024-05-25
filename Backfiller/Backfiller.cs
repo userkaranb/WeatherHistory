@@ -18,6 +18,7 @@ public interface IBackfiller
     Task Execute(List<string>? cityList);
 
     Task CreateWeatherScorePK();
+    Task CreateIdealTempAndSunDaysSk();
 }
 
 public class Backfiller : IBackfiller
@@ -42,7 +43,16 @@ public class Backfiller : IBackfiller
         _dataLayer.CreateWeatherScoreKey(combos);
     }
 
-    public async Task DeleteExistingWeatherScorePK(List<string> cityNames)
+    public async Task CreateIdealTempAndSunDaysSk()
+    {
+        // get all ideal sun days and temp days combos
+        var combos = await _dataLayer.GetAllIdealSunDaysCombos();
+        _dataLayer.CreateIdealSunDaysScoreKey(combos);
+        // create an endpoint to read from it
+        // clean up the datalayer
+    }
+
+    private async Task DeleteExistingWeatherScorePK(List<string> cityNames)
     {
         foreach(var cityName in cityNames)
         {
