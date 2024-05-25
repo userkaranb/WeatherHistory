@@ -99,19 +99,14 @@ app.MapRazorPages();
 // Backfiller.Execute();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
-var backfiller = container.Resolve<IBackfiller>();
-backfiller.CreateGenericCityWeatherScoreSK();
+// var backfiller = container.Resolve<IBackfiller>();
+// backfiller.CreateGenericCityWeatherScoreSK();
 
 // TO DO:
 
-// DRY things - look through data layer and pull out all magic strings and duplicative format methods. Find homes for everything
-// Basically make it so that the data layer does writes, and thats about it. Formatting happens elsewhere
-// Clean up backfiller
-// Add Tests
 // Remove db credentials
-// Add 1 more attribute like IdealTmepDays
-// PRODUCTIONIZE APP (HIDE DB CREDENTIALS, WRITE TESTS, CLEAN UP WARNINGS)
-
+// Add Tests
+// Next API integration?
 
 app.Run();
 

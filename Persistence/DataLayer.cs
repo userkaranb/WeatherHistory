@@ -2,9 +2,9 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
-using Amazon.Runtime.Internal.Util;
-using Microsoft.AspNetCore.Http.Features;
+using Amazon.SecretsManager;
 using System.Diagnostics;
+using Newtonsoft.Json;
 
 
 namespace Jubilado.Persistence;
@@ -30,17 +30,12 @@ public class DataLayer : IDataLayer
     const String SK = "SK";
     const String GSI1PK = "GSI1PK";
     const String GSISK = "GSI1SK";
+    BasicAWSCredentials? credentials = null;
     public DataLayer()
     {
         // this is bad
-        var awsCredentials = new BasicAWSCredentials("AKIAVRUVWNX44E25QLC7", "2FA72iPuUXiFaFLMyqIAGMLL13MNdDFfVpVqL+wk");
-        var dynamoDBConfig = new AmazonDynamoDBConfig
-        {
-            RegionEndpoint = Amazon.RegionEndpoint.USEast2 // Replace YOUR_REGION with your AWS region
-        };
-
-        _client = new AmazonDynamoDBClient(awsCredentials, dynamoDBConfig);
-        _table = Table.LoadTable(_client, TableName);
+        
+        // Use accessKey and secretKey to configure DynamoDB client
 
     }
     public async Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute
@@ -68,7 +63,7 @@ public class DataLayer : IDataLayer
             }
         };
         var extraItemsToDelete = await GetWeatherScoreKeysToDelete(cityName);
-        var queryResponse = await _client.QueryAsync(queryRequest);
+        var queryResponse = await GetAwsClient().QueryAsync(queryRequest);
         var transactItems  = extraItemsToDelete.Select(x => new Amazon.DynamoDBv2.Model.TransactWriteItem { Delete = x}).ToList();
 
         foreach (var item in queryResponse.Items)
@@ -94,7 +89,7 @@ public class DataLayer : IDataLayer
 
             try
             {
-                await _client.TransactWriteItemsAsync(transactWriteItemsRequest);
+                await GetAwsClient().TransactWriteItemsAsync(transactWriteItemsRequest);
                 Console.WriteLine("Transaction succeeded.");
             }
             catch (Exception ex)
@@ -118,7 +113,7 @@ public class DataLayer : IDataLayer
             }
         };
 
-        var extraQueryResponse = await _client.QueryAsync(extraQueryRequest);
+        var extraQueryResponse = await GetAwsClient().QueryAsync(extraQueryRequest);
         return extraQueryResponse.Items.Select(item => new Delete
             {
                 TableName = TableName,
@@ -143,7 +138,7 @@ public class DataLayer : IDataLayer
             ProjectionExpression = projectionExpressionFields
         };
 
-        var scanResponse = await _client.ScanAsync(scanRequest);
+        var scanResponse = await GetAwsClient().ScanAsync(scanRequest);
         return scanResponse;
     }
 
@@ -167,7 +162,7 @@ public class DataLayer : IDataLayer
         {
             queryRequest.ScanIndexForward = false;
         }
-        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
         var toDict = queryResponse.Items;
         return ItemFactory.ToSortableCityScoreBulk<T>(toDict);
     }
@@ -184,7 +179,7 @@ public class DataLayer : IDataLayer
                 { ":sk", new AttributeValue { S = $"CITY#{city.CityName}" } }
             }
         };
-        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
         Console.WriteLine(city.CityName);
         var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
@@ -203,7 +198,7 @@ public class DataLayer : IDataLayer
                 { ":sk", new AttributeValue { S = $"WEATHERHISTORY#" } }
             }
         };
-        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
         return queryResponse.Items.Select(x => ItemFactory.ToWeatherHistory(x)).ToList();
     }
 
@@ -288,7 +283,7 @@ public class DataLayer : IDataLayer
         // Execute PutItem request
         try
         {
-            var resp = await _client.PutItemAsync(request);
+            var resp = await GetAwsClient().PutItemAsync(request);
             Console.WriteLine("Event inserted successfully.");
         }
         catch (Exception ex)
@@ -308,7 +303,7 @@ public class DataLayer : IDataLayer
 
         try
         {
-            var response = await _client.TransactWriteItemsAsync(request);
+            var response = await GetAwsClient().TransactWriteItemsAsync(request);
             Console.WriteLine("Transaction succeeded.");
         }
         catch (Exception ex)
@@ -335,7 +330,7 @@ public class DataLayer : IDataLayer
             };
              try
             {
-                var resp = await _client.BatchWriteItemAsync(request);
+                var resp = await GetAwsClient().BatchWriteItemAsync(request);
                 Console.WriteLine("Event inserted successfully.");
             }
             catch (Exception ex)
@@ -357,7 +352,7 @@ public class DataLayer : IDataLayer
         // Execute PutItem request
         try
         {
-            var resp = await _client.UpdateItemAsync(request);
+            var resp = await GetAwsClient().UpdateItemAsync(request);
             Console.WriteLine("Event inserted successfully.");
         }
         catch (Exception ex)
@@ -374,6 +369,31 @@ public class DataLayer : IDataLayer
     private static string GetCityWeatherScorePK()
     {
         return $"CITY-WEATHER-SCORE";
+    }
+
+    private AmazonDynamoDBClient GetAwsClient()
+    {
+        if(_client == null)
+        {
+            var client = new AmazonSecretsManagerClient();
+            var secretService = new SecretManagerService(client);
+            string secretName = "DDB-Jubilado";
+            string secretJson = secretService.GetSecretAsync(secretName).GetAwaiter().GetResult();
+
+            // Parse the JSON to extract the access key and secret
+            var secretData = JsonConvert.DeserializeObject<Dictionary<string, string>>(secretJson);
+            var awsCredentials = new BasicAWSCredentials(secretData.Keys.First(), secretData.Values.First());
+            var dynamoDBConfig = new AmazonDynamoDBConfig
+            {
+                RegionEndpoint = Amazon.RegionEndpoint.USEast2 // Replace YOUR_REGION with your AWS region
+            };
+
+            _client = new AmazonDynamoDBClient(awsCredentials, dynamoDBConfig);
+            _table = Table.LoadTable(_client, TableName);
+
+        }
+        return _client;
+
     }
 
 }
