@@ -64,6 +64,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
         containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
         containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
         containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
+        containerBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
     });
 
 
@@ -101,6 +102,7 @@ app.MapRazorPages();
 // backfiller.CreateIdealTempAndSunDaysSk();
 
 // TO DO:
+
 // DRY things - look through data layer and pull out all magic strings and duplicative format methods. Find homes for everything
 // Basically make it so that the data layer does writes, and thats about it. Formatting happens elsewhere
 // Clean up backfiller

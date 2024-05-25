@@ -1,8 +1,6 @@
 using System.Data;
 using Jubilado;
 using Jubilado.Persistence;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 public interface ICityCreatorService
 {
@@ -13,25 +11,28 @@ public interface ICityCreatorService
 public class CityCreatorService : ICityCreatorService
 {
     private IDataLayer _dataLayer;
+    private ICityWeatherHistoryApiCaller _weatherHistoryApiCaller;
     private const float IDEAL_TEMP = 75f;
     private const float IDEAL_SUN = 100f;
     private const float IDEAL_HUM = 50f;
-    private HttpClient _client;
-
-    const string KEY = "YLQ4H9DL7KCFMPEA6PDFU2W59";
-    const string URI = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
-
-    public CityCreatorService(IDataLayer dataLayer)
+    
+    public CityCreatorService(IDataLayer dataLayer, ICityWeatherHistoryApiCaller weatherHistoryApiCaller)
     {
         _dataLayer = dataLayer;
-        _client = new HttpClient();
+        _weatherHistoryApiCaller = weatherHistoryApiCaller;
     }
     
     public async Task CreateCity(List<City> cities)
     {
+        // see whats already there
         var cityKeyToCityValue = cities.Select(x => (x, _dataLayer.GetCity(x))).ToDictionary<City, City>();
         var citiesThatDontHaveValues = cityKeyToCityValue.Where(x => City.IsCityEmpty(x.Value)).Select(x => x.Key).ToList();
-        await DownloadAndPersistWeatherHistoryItems(citiesThatDontHaveValues);
+        
+        // download and persist weather history items for whatevers not there
+        var downloadedWeatherHistoryItems = await _weatherHistoryApiCaller.DownloadWeatherHistoryItems(citiesThatDontHaveValues);
+        _dataLayer.CreateWeatherHistoryItems(downloadedWeatherHistoryItems);
+        
+        //Amend Weather info to city object, and persist
         var cityToCityStatMappings = GetWeatherStatsForCities(citiesThatDontHaveValues);
         foreach(var city in cityToCityStatMappings.Keys)
         {
@@ -44,30 +45,6 @@ public class CityCreatorService : ICityCreatorService
     {
         _dataLayer.DeleteCity(city);
     }
-
-    private async Task DownloadAndPersistWeatherHistoryItems(List<City> citiesList)
-    {
-        var (start, end) = GetDateRanges();
-        foreach(var city in citiesList)
-        {
-            var url = GetFormattedUrl(city.CityName, start, end);
-            var historyItems = await FetchFromApi(city.CityName, url);
-            _dataLayer.CreateWeatherHistoryItems(historyItems);
-        }
-    }
-
-    private static Tuple<string, string> GetDateRanges()
-    {
-        return new Tuple<string, string>(new DateOnly(2023, 1, 1).ToString("yyyy-MM-dd"), 
-        new DateOnly(2023, 12, 31).ToString("yyyy-MM-dd"));
-    }
-
-    private static string GetFormattedUrl(string cityName, string startDate, string endDate)
-    {
-        var formattedCity = cityName.Replace(" ", "%20");
-        return $"{URI}{formattedCity}/{startDate.ToString()}/{endDate.ToString()}?key={KEY}";
-    }
-
 
     private Dictionary<City, CityStatWrapper> GetWeatherStatsForCities(List<City> cities)
     {
@@ -103,39 +80,4 @@ public class CityCreatorService : ICityCreatorService
         return (float)metrics.Select(metric => Math.Abs(ideal - metric)).Average();
     }
 
-    private static async Task<List<WeatherHistory>> ConvertJsonToWeatherHistory(Dictionary<string, object> jsonBlob, string cityName)
-    {
-        List<WeatherHistory> weatherHistoryItems = new List<WeatherHistory>();
-        var dailyWeatherHistory = jsonBlob["days"] as List<object>;
-        JArray children = (JArray)jsonBlob["days"];
-
-        foreach (JObject child in children)
-        {
-            string datetime = (string)child["datetime"];
-            double temp = (double)child["temp"];
-            double humidity = (double)child["humidity"];
-            double sunshine = (double)child["cloudcover"];
-            weatherHistoryItems.Add(new WeatherHistory(cityName, datetime, humidity, temp, sunshine));
-        }
-        return weatherHistoryItems;
-    }
-
-    private async Task<List<WeatherHistory>> FetchFromApi(string city, string url)
-    {
-        try
-        {
-            HttpResponseMessage response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseBody);
-            return await ConvertJsonToWeatherHistory(dict, city);
-        }
-        catch (HttpRequestException e)
-        {
-            // Handle any errors that occurred during the request
-            var msg = $"City {city} didn't work Message :{e.Message} ";
-            Console.WriteLine(msg);
-            return null;
-        }
-    }
 }
