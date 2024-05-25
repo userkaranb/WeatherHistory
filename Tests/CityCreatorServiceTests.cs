@@ -38,10 +38,12 @@ public class CityCreatorServiceTests
     public async Task CreateCity_ShouldCreateWeatherHistoryItems()
     {
         // Arrange
-        var cities = new List<City> { new City("New York") };
+        var nyc = new City("New York");
+        var cities = new List<City> { nyc };
         var weatherHistory = new List<WeatherHistory> { new WeatherHistory("New York", "2024-5-1", 2.0, 70, 3.0) };
         _mockDataLayer.Setup(d => d.GetCity(It.IsAny<City>())).Returns((City)null);
         _mockWeatherHistoryApiCaller.Setup(c => c.DownloadWeatherHistoryItems(It.IsAny<List<City>>())).ReturnsAsync(weatherHistory);
+        _mockDataLayer.Setup(d => d.GetCity(It.IsAny<City>())).Returns(nyc);
 
         // Act
         await _service.CreateCity(cities);

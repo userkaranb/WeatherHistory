@@ -75,7 +75,7 @@ public class CityCreatorService : ICityCreatorService
         return new CityStatWrapper(cityName, tempScore, sunshineScore, humidityScore, weatherScore, idealTempDays.Count(), idealSunshineDays.Count()); 
     }
 
-    private float CalculateIdealMetric(List<float> metrics, float ideal)
+    internal float CalculateIdealMetric(List<float> metrics, float ideal)
     {
         return (float)metrics.Select(metric => Math.Abs(ideal - metric)).Average();
     }
