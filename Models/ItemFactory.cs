@@ -138,6 +138,18 @@ public class ItemFactory
         return new CityIdealSunDays(cityName, idealSunDays);
     }
 
+    public static List<CityIdealSunDays> ToCityIdealSunDaysBulk(List<Dictionary<string, AttributeValue>> values)
+    {
+      List<CityIdealSunDays> retVals = new List<CityIdealSunDays>();
+      foreach(var val in values)
+      {
+        var cityScore = int.Parse(val["SK"].S.Split("#")[1]);
+        var cityName = val["CityName"].S;
+        retVals.Add(new CityIdealSunDays(cityName, cityScore));
+      }
+      return retVals;
+    }
+
   private static T GetValue<T>(AttributeValue val)
   {
     string stringValue = val.S ?? val.N; // Assuming either S or N is not null.

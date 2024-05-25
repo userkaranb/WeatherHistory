@@ -6,6 +6,7 @@ using System.Diagnostics;
 public interface ICityGetterService
 {
     Task<List<CityWeatherScore>> GetTopWeatherScoreCities();
+    Task<List<CityIdealSunDays>> GetTopIdealSunDays();
 }
 
 public class CityGetterService : ICityGetterService
@@ -25,5 +26,17 @@ public class CityGetterService : ICityGetterService
         Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
         return results;
     }
+
+    public async Task<List<CityIdealSunDays>> GetTopIdealSunDays()
+    {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var results = await _dataLayer.GetAllIdealSunDaysCombos();
+        stopwatch.Stop();
+        Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+        return results;
+
+    }
+
 
 }

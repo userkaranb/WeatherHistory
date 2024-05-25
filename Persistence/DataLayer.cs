@@ -63,14 +63,14 @@ public class DataLayer : IDataLayer
 
     public async Task<List<CityIdealSunDays>> GetAllIdealSunDaysCombos()
     {
-        var useNewCode = false;
+        var useNewCode = true;
         if(!useNewCode)
         {
             var scannedResponse = await GetAllCityIdealSunDaysCombosUsingScan("CityName, IdealSunDays");
             return scannedResponse.OrderBy(x => x.IdealSunDays).ToList();
         }
 
-        return null;
+        return await GetAllIdealSunScoresUsingNewKey();
     }
 
     public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
@@ -243,6 +243,27 @@ public class DataLayer : IDataLayer
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
         var toDict = queryResponse.Items;
         return ItemFactory.ToCityWeatherScores(toDict);
+    }
+
+     private async Task<List<CityIdealSunDays>> GetAllIdealSunScoresUsingNewKey()
+    {
+        var stopwatch = new Stopwatch();
+        List<CityIdealSunDays> cityScores = new List<CityIdealSunDays>();
+        stopwatch.Start();
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
+            ScanIndexForward = false,
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
+                { ":sk", new AttributeValue { S = $"IDEALSUNDAYS" } },
+            }
+        };
+        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var toDict = queryResponse.Items;
+        return ItemFactory.ToCityIdealSunDaysBulk(toDict);
     }
 
     public City GetCity(City city)
