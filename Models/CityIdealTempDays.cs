@@ -3,16 +3,13 @@ using System.Text.Json.Serialization;
 namespace Jubilado;
 
 [Serializable()]
-public class CityIdealTempDays : Item
+public class CityIdealTempDays : SortableCityWeatherAttribute
 {
-
-    public string CityName {private set; get;}
 
     public int IdealTempDays { private set; get;}
 
-    public CityIdealTempDays(string cityName, int idealTempDays)
+    public CityIdealTempDays(string cityName, int idealTempDays) : base(cityName)
     {
-        CityName = cityName;
         IdealTempDays = idealTempDays;
     }
 

@@ -1,4 +1,5 @@
-﻿using Amazon.DynamoDBv2.Model;
+﻿using System.ComponentModel;
+using Amazon.DynamoDBv2.Model;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jubilado;
@@ -96,48 +97,6 @@ public class ItemFactory
       return retVals;
     }
 
-    public static CityWeatherScore ToCityWeatherScore(Dictionary<string, AttributeValue> values)
-    {
-       string cityName = "";
-       float weatherScore = -1f;
-        foreach(var kvp in values)
-        {
-            switch(kvp.Key)
-            {
-                case "CityName":
-                  cityName = values["CityName"].S;
-                  break;
-                case "WeatherScore":
-                  weatherScore = GetValue<float>(values["WeatherScore"]);
-                  break;
-                case null:
-                    continue;
-            }
-        }
-        return new CityWeatherScore(cityName, weatherScore);
-    }
-
-    public static CityIdealSunDays ToCityIdealSunDays(Dictionary<string, AttributeValue> values)
-    {
-       string cityName = "";
-       int idealSunDays = -1;
-        foreach(var kvp in values)
-        {
-            switch(kvp.Key)
-            {
-                case "CityName":
-                  cityName = values["CityName"].S;
-                  break;
-                case "IdealSunDays":
-                  idealSunDays = GetValue<int>(values["IdealSunDays"]);
-                  break;
-                case null:
-                    continue;
-            }
-        }
-        return new CityIdealSunDays(cityName, idealSunDays);
-    }
-
     public static List<CityIdealSunDays> ToCityIdealSunDaysBulk(List<Dictionary<string, AttributeValue>> values)
     {
       List<CityIdealSunDays> retVals = new List<CityIdealSunDays>();
@@ -150,9 +109,65 @@ public class ItemFactory
       return retVals;
     }
 
+    public static List<T> ToSortableCityScoreBulk<T>(List<Dictionary<string, AttributeValue>> values)
+      where T : SortableCityWeatherAttribute
+    {
+      List<T> retVals = new List<T>();
+      if (typeof(T) == typeof(CityWeatherScore))
+      {
+        foreach(var val in values)
+        {
+          retVals.Add(new CityWeatherScore(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<float>(val)) as T);
+        }
+      }
+      if (typeof(T) == typeof(CityIdealSunDays))
+      {
+        foreach(var val in values)
+        {
+          retVals.Add(new CityIdealSunDays(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+        }
+      }
+      if (typeof(T) == typeof(CityIdealTempDays))
+      {
+        foreach(var val in values)
+        {
+          retVals.Add(new CityIdealTempDays(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+        }
+      }
+
+      return retVals;
+
+    }
+
+    public static T1 ToSortableCityWeatherScoreItem<T1>(Dictionary<string, AttributeValue> values) 
+      where T1 : SortableCityWeatherAttribute
+    {
+      var cityName = values["CityName"].S;
+      if (typeof(T1) == typeof(CityWeatherScore))
+      {
+        return new CityWeatherScore(cityName, GetValue<float>(values["WeatherScore"])) as T1;
+      }
+      if (typeof(T1) == typeof(CityIdealSunDays))
+      {
+          return new CityIdealSunDays(cityName, GetValue<int>(values["IdealSunDays"])) as T1;
+      }
+      if (typeof(T1) == typeof(CityIdealTempDays))
+      {
+          return new CityIdealTempDays(cityName, GetValue<int>(values["IdealTempDays"])) as T1;
+      }
+
+      throw new InvalidOperationException("Unsupported type");
+    }
+
   private static T GetValue<T>(AttributeValue val)
   {
     string stringValue = val.S ?? val.N; // Assuming either S or N is not null.
+    return (T)Convert.ChangeType(stringValue, typeof(T));
+  }
+
+  private static T GetSortableWeatherAttributeFromSortKey<T>(Dictionary<string, AttributeValue> val)
+  {
+    string stringValue = val["SK"].S.Split("#")[1];
     return (T)Convert.ChangeType(stringValue, typeof(T));
   }
 

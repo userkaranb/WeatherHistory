@@ -21,7 +21,7 @@ public class CityGetterService : ICityGetterService
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var results = await _dataLayer.GetAllCityWeatherScoreCombos();
+        var results = await _dataLayer.GetSortedWeatherStat<CityWeatherScore>("WEATHERSCORE");
         stopwatch.Stop();
         Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
         return results;
@@ -31,7 +31,7 @@ public class CityGetterService : ICityGetterService
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var results = await _dataLayer.GetAllIdealSunDaysCombos();
+        var results = await _dataLayer.GetSortedWeatherStat<CityIdealSunDays>("IDEALSUNDAYS", true);
         stopwatch.Stop();
         Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
         return results;

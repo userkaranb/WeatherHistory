@@ -3,16 +3,12 @@ using System.Text.Json.Serialization;
 namespace Jubilado;
 
 [Serializable()]
-public class CityWeatherScore : Item
+public class CityWeatherScore : SortableCityWeatherAttribute
 {
-
-    public string CityName {private set; get;}
-
     public float WeatherScore { private set; get;}
 
-    public CityWeatherScore(string cityName, float weatherScore)
+    public CityWeatherScore(string cityName, float weatherScore) : base(cityName)
     {
-        CityName = cityName;
         WeatherScore = (float)Math.Round(weatherScore, 2);
     }
 

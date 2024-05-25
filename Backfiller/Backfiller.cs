@@ -15,7 +15,7 @@ using Jubilado.Persistence;
 
 public interface IBackfiller
 {
-    Task Execute(List<string>? cityList);
+    Task BackfillCityCreation(List<string>? cityList);
 
     Task CreateWeatherScorePK();
     Task CreateIdealTempAndSunDaysSk();
@@ -36,9 +36,17 @@ public class Backfiller : IBackfiller
         _cityCreatorService = cityCreatorService;
     }
 
+
+    private async Task CreateGenericCityWeatherScoreSK()
+    {
+        // Go get all stats pertaining to the given key from the city object (need a datalayer function genericized)
+        // Optional Delete existing SK, also generecized (parameterized)
+        // Genercized Create new SK
+
+    }
     public async Task CreateWeatherScorePK()
     {
-        var combos = await _dataLayer.GetAllCityWeatherScoreCombos();
+        var combos = await _dataLayer.GetExistingWeatherScoreAttribute<CityWeatherScore>("CityName, WeatherScore");
         await DeleteExistingWeatherScorePK(combos.Select(x => x.CityName).ToList());
         _dataLayer.CreateWeatherScoreKey(combos);
     }
@@ -46,7 +54,7 @@ public class Backfiller : IBackfiller
     public async Task CreateIdealTempAndSunDaysSk()
     {
         // get all ideal sun days and temp days combos
-        var combos = await _dataLayer.GetAllIdealSunDaysCombos();
+        var combos = await _dataLayer.GetExistingWeatherScoreAttribute<CityIdealSunDays>("CityName, IdealSunDays");
         _dataLayer.CreateIdealSunDaysScoreKey(combos);
         // create an endpoint to read from it
         // clean up the datalayer
@@ -60,74 +68,12 @@ public class Backfiller : IBackfiller
         }
     }
 
-    public async Task Execute(List<string>? cityList = null)
+    public async Task BackfillCityCreation(List<string> cityList)
     {
-
-        var citiesList = cityList == null ? 
-        (SHOULD_DRY_RUN ? GetDryRunCitiesOfInterest() : CityListHelper.GetCitiesOfInterest()) : 
-        cityList.Select(cityString => new City(cityString)).ToList();
+        var citiesList = cityList.Select(cityString => new City(cityString)).ToList();
         if(SHOULD_RUN)
         {
             await _cityCreatorService.CreateCity(citiesList);
         }
-    }
-
-    private async Task FetchFromApi(HttpClient client, string city, string url)
-    {
-        try
-        {
-            HttpResponseMessage response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseBody);
-            var converted = await ConvertJsonToWeatherHistory(dict, city);
-            foreach(var historyItem in converted)
-            {
-                _dataLayer.CreateWeatherHistoryItem(historyItem);
-                // Console.WriteLine($"Item: {historyItem.CityName}-{historyItem.Date}-{historyItem.Humidity}-{historyItem.Sunshine}-{historyItem.Temperature}");
-            }
-        }
-        catch (HttpRequestException e)
-        {
-            // Handle any errors that occurred during the request
-            Console.WriteLine("City {0} didn't work Message :{1} ", city, e.Message);
-        }
-    }
-
-    private static async Task<List<WeatherHistory>> ConvertJsonToWeatherHistory(Dictionary<string, object> jsonBlob, string cityName)
-    {
-        List<WeatherHistory> weatherHistoryItems = new List<WeatherHistory>();
-        var dailyWeatherHistory = jsonBlob["days"] as List<object>;
-        JArray children = (JArray)jsonBlob["days"];
-
-        foreach (JObject child in children)
-        {
-            string datetime = (string)child["datetime"];
-            double temp = (double)child["temp"];
-            double humidity = (double)child["humidity"];
-            double sunshine = (double)child["cloudcover"];
-            weatherHistoryItems.Add(new WeatherHistory(cityName, datetime, humidity, temp, sunshine));
-        }
-        return weatherHistoryItems;
-    }
-
-    public static List<City> GetDryRunCitiesOfInterest()
-    {
-        return new List<City>()
-        {
-            new City("Buenos Aires")
-        };
-    }
-
-    public static Tuple<string, string> GetDateRanges()
-    {
-        return new Tuple<string, string>(new DateOnly(2023, 1, 1).ToString("yyyy-MM-dd"), 
-        new DateOnly(2023, 12, 31).ToString("yyyy-MM-dd"));
-    }
-
-    public static string GetFormattedUrl(string cityName, string startDate, string endDate)
-    {
-        var formattedCity = cityName.Replace(" ", "%20");
-        return $"{URI}{formattedCity}/{startDate.ToString()}/{endDate.ToString()}?key={KEY}";
     }
 }

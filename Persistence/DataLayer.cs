@@ -12,13 +12,12 @@ namespace Jubilado.Persistence;
 public interface IDataLayer
 {
     public City GetCity(City city);
-    public Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos();
-    public Task<List<CityIdealSunDays>> GetAllIdealSunDaysCombos();
+    Task<List<T>> GetExistingWeatherScoreAttribute<T>(string attributesToScan) where T : SortableCityWeatherAttribute;
+    Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false) where T : SortableCityWeatherAttribute;
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
     void DeleteCity(City city);
     void CreateWeatherScoreInfo(CityStatWrapper cityStat);
-    void CreateWeatherHistoryItem(WeatherHistory historyItem);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateWeatherScoreKey(List<CityWeatherScore> cityScores);
     void CreateIdealSunDaysScoreKey(List<CityIdealSunDays> cityScores);
@@ -48,29 +47,16 @@ public class DataLayer : IDataLayer
         _table = Table.LoadTable(_client, TableName);
 
     }
-
-    public async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos()
+    public async Task<List<T>> GetExistingWeatherScoreAttribute<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
-        var useNewCode = true;
-        if(!useNewCode)
-        {
-            var scannedResponse = await GetAllCityWeatherScoreCombosUsingScan("CityName, WeatherScore");
-            return scannedResponse.OrderBy(x => x.WeatherScore).ToList();
-        }
-
-        return await GetAllCityWeatherScoreCombosUsingNewKey();
+        var scanResults = await PerformScan(attributesToScan);
+        return scanResults.Items.Select(item => ItemFactory.ToSortableCityWeatherScoreItem<T>(item)).ToList();
     }
 
-    public async Task<List<CityIdealSunDays>> GetAllIdealSunDaysCombos()
+    public async Task<List<T>> GetSortedCityScore<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
-        var useNewCode = true;
-        if(!useNewCode)
-        {
-            var scannedResponse = await GetAllCityIdealSunDaysCombosUsingScan("CityName, IdealSunDays");
-            return scannedResponse.OrderBy(x => x.IdealSunDays).ToList();
-        }
-
-        return await GetAllIdealSunScoresUsingNewKey();
+        var scanResults = await PerformScan(attributesToScan);
+        return scanResults.Items.Select(item => ItemFactory.ToSortableCityWeatherScoreItem<T>(item)).ToList();
     }
 
     public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
@@ -176,38 +162,6 @@ public class DataLayer : IDataLayer
             }).ToList();
     }
 
-    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingScan(string projectionExpressionFields)
-    {
-        var stopwatch = new Stopwatch();
-        List<CityWeatherScore> cityScores = new List<CityWeatherScore>();
-        stopwatch.Start();
-        ScanResponse scanResponse = await PerformScan(projectionExpressionFields);
-        Console.WriteLine(scanResponse.Count);
-        foreach (var item in scanResponse.Items)
-        {
-            cityScores.Add(ItemFactory.ToCityWeatherScore(item));
-        }
-        stopwatch.Stop();
-        Console.WriteLine($"Elapsed time scanning: {stopwatch.ElapsedMilliseconds} ms");
-        return cityScores;
-    }
-
-    private async Task<List<CityIdealSunDays>> GetAllCityIdealSunDaysCombosUsingScan(string projectionExpressionFields)
-    {
-        var stopwatch = new Stopwatch();
-        List<CityIdealSunDays> cityScores = new List<CityIdealSunDays>();
-        stopwatch.Start();
-        ScanResponse scanResponse = await PerformScan(projectionExpressionFields);
-        Console.WriteLine(scanResponse.Count);
-        foreach (var item in scanResponse.Items)
-        {
-            cityScores.Add(ItemFactory.ToCityIdealSunDays(item));
-        }
-        stopwatch.Stop();
-        Console.WriteLine($"Elapsed time scanning: {stopwatch.ElapsedMilliseconds} ms");
-        return cityScores;
-    }
-
     private async Task<ScanResponse> PerformScan(string projectionExpressionFields)
     {
         var scanRequest = new ScanRequest
@@ -245,25 +199,29 @@ public class DataLayer : IDataLayer
         return ItemFactory.ToCityWeatherScores(toDict);
     }
 
-     private async Task<List<CityIdealSunDays>> GetAllIdealSunScoresUsingNewKey()
+     public async Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false)
+        where T : SortableCityWeatherAttribute
     {
         var stopwatch = new Stopwatch();
-        List<CityIdealSunDays> cityScores = new List<CityIdealSunDays>();
         stopwatch.Start();
         var queryRequest = new QueryRequest
         {
             TableName = TableName,
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
-            ScanIndexForward = false,
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
-                { ":sk", new AttributeValue { S = $"IDEALSUNDAYS" } },
+                { ":sk", new AttributeValue { S = sortKeyIdentifier } },
             }
         };
+
+        if(isOrderDescending)
+        {
+            queryRequest.ScanIndexForward = false;
+        }
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
         var toDict = queryResponse.Items;
-        return ItemFactory.ToCityIdealSunDaysBulk(toDict);
+        return ItemFactory.ToSortableCityScoreBulk<T>(toDict);
     }
 
     public City GetCity(City city)
