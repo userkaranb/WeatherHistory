@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 public interface ICityCreatorService
 {
     Task CreateCity(List<City> cities);
+    Task DeleteCity(City city);
 }
 
 public class CityCreatorService : ICityCreatorService
@@ -37,6 +38,11 @@ public class CityCreatorService : ICityCreatorService
             city.CityStats = cityToCityStatMappings[city];
             _dataLayer.CreateCity(city);
         }
+    }
+
+    public async Task DeleteCity(City city)
+    {
+        _dataLayer.DeleteCity(city);
     }
 
     private async Task DownloadAndPersistWeatherHistoryItems(List<City> citiesList)

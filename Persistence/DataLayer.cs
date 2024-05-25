@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
+using Amazon.Runtime.Internal.Util;
 using Microsoft.AspNetCore.Http.Features;
 using System.Diagnostics;
 
@@ -14,6 +15,7 @@ public interface IDataLayer
     public Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombos();
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
+    void DeleteCity(City city);
     void CreateWeatherScoreInfo(CityStatWrapper cityStat);
     void CreateWeatherHistoryItem(WeatherHistory historyItem);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
@@ -64,6 +66,87 @@ public class DataLayer : IDataLayer
     {
         var weatherScores = cityWeatherScores.Select(x => FormatCityWeatherScore(x)).ToList();
         await BatchWriteItem(weatherScores);
+    }
+
+    public async void DeleteCity(City city)
+    {
+        await DeletePartitionAndItemAsync(city.CityName);
+    }
+
+    public async Task DeletePartitionAndItemAsync(string cityName)
+    {
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = GetCityPK(cityName) } }
+            }
+        };
+        var extraQueryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk",
+            FilterExpression = "contains(CityName, :str)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = GetCityWeatherScorePK() } },
+                { ":str", new AttributeValue { S = $"{cityName}" } }
+            }
+        };
+
+        var queryResponse = await _client.QueryAsync(queryRequest);
+        var extraQueryResponse = await _client.QueryAsync(extraQueryRequest);
+
+        var transactItems = new List<TransactWriteItem>();
+
+        foreach (var item in queryResponse.Items)
+        {
+            var deleteRequest = new Delete
+            {
+                TableName = TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", item["PK"] },
+                    { "SK", item["SK"] }
+                }
+            };
+            transactItems.Add(new TransactWriteItem { Delete = deleteRequest });
+        }
+
+        foreach (var item in extraQueryResponse.Items)
+        {
+            var deleteRequest = new Delete
+            {
+                TableName = TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", item["PK"] },
+                    { "SK", item["SK"] }
+                }
+            };
+            transactItems.Add(new TransactWriteItem { Delete = deleteRequest });
+        }
+
+        foreach(var chunk in transactItems.Chunk(25))
+        {
+            var transactWriteItemsRequest = new TransactWriteItemsRequest
+            {
+                TransactItems = chunk.ToList()
+            };
+
+            try
+            {
+                await _client.TransactWriteItemsAsync(transactWriteItemsRequest);
+                Console.WriteLine("Transaction succeeded.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Transaction failed: {ex.Message}");
+            }   
+        }
+        
     }
 
     private void GetAllSortedWeatherScores()
@@ -366,4 +449,15 @@ public class DataLayer : IDataLayer
             Console.WriteLine($"Error inserting event: {ex.Message}");
         }
     }
+
+    private string GetCityPK(string cityName)
+    {
+        return $"CITY#{cityName}";
+    }
+
+    private string GetCityWeatherScorePK()
+    {
+        return $"CITY-WEATHER-SCORE";
+    }
+
 }

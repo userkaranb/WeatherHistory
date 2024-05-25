@@ -35,6 +35,13 @@ namespace Jubilado.Controllers
             return Ok("done");
         }
 
+        [HttpDelete("{cityName}")]
+        public async Task<IActionResult> DeleteCity(string cityName)
+        {
+            await _cityCreatorService.DeleteCity(new City(cityName));
+            return Ok("done");
+        }
+
         [HttpGet("{cityName}/weatherhistory")]
         public JsonResult GetWeatherHistory(string cityName)
         {
