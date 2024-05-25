@@ -7,4 +7,7 @@ public abstract class SortableCityWeatherAttribute
     {
         CityName = cityName;
     }
+
+    public abstract string GetFormattedNumber();
+    
 }

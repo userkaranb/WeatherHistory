@@ -85,30 +85,6 @@ public class ItemFactory
         return new WeatherHistory(cityName, date, humidity, temperature, sunshine);
     }
 
-    public static List<CityWeatherScore> ToCityWeatherScores(List<Dictionary<string, AttributeValue>> values)
-    {
-      List<CityWeatherScore> retVals = new List<CityWeatherScore>();
-      foreach(var val in values)
-      {
-        var cityScore = float.Parse(val["SK"].S.Split("#")[1]);
-        var cityName = val["CityName"].S;
-        retVals.Add(new CityWeatherScore(cityName, cityScore));
-      }
-      return retVals;
-    }
-
-    public static List<CityIdealSunDays> ToCityIdealSunDaysBulk(List<Dictionary<string, AttributeValue>> values)
-    {
-      List<CityIdealSunDays> retVals = new List<CityIdealSunDays>();
-      foreach(var val in values)
-      {
-        var cityScore = int.Parse(val["SK"].S.Split("#")[1]);
-        var cityName = val["CityName"].S;
-        retVals.Add(new CityIdealSunDays(cityName, cityScore));
-      }
-      return retVals;
-    }
-
     public static List<T> ToSortableCityScoreBulk<T>(List<Dictionary<string, AttributeValue>> values)
       where T : SortableCityWeatherAttribute
     {

@@ -52,6 +52,7 @@ var autoFacBuilder = new ContainerBuilder();
 autoFacBuilder.RegisterType<DataLayer>().As<IDataLayer>();
 autoFacBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
 autoFacBuilder.RegisterType<Backfiller>().As<IBackfiller>();
+autoFacBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
 var container = autoFacBuilder.Build();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,8 +64,8 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
         // Register your Autofac services here
         containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
         containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
-        containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
         containerBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
+        containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
     });
 
 
@@ -98,8 +99,8 @@ app.MapRazorPages();
 // Backfiller.Execute();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
-// var backfiller = container.Resolve<IBackfiller>();
-// backfiller.CreateIdealTempAndSunDaysSk();
+var backfiller = container.Resolve<IBackfiller>();
+backfiller.CreateGenericCityWeatherScoreSK();
 
 // TO DO:
 

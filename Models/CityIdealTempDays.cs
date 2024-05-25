@@ -12,5 +12,9 @@ public class CityIdealTempDays : SortableCityWeatherAttribute
     {
         IdealTempDays = idealTempDays;
     }
+    public override string GetFormattedNumber()
+    {
+        return IdealTempDays.ToString("D4");
+    }
 
 }

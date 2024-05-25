@@ -12,9 +12,9 @@ public class CityWeatherScore : SortableCityWeatherAttribute
         WeatherScore = (float)Math.Round(weatherScore, 2);
     }
 
-    public string GetStringKeyForWeatherScore()
+    public override string GetFormattedNumber()
     {
-        return WeatherScore.ToString("F2");
+        return WeatherScore.ToString("F2").PadLeft(10, '0');
     }
 
     public override string ToString()

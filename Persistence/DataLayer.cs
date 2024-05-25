@@ -12,17 +12,13 @@ namespace Jubilado.Persistence;
 public interface IDataLayer
 {
     public City GetCity(City city);
-    Task<List<T>> GetExistingWeatherScoreAttribute<T>(string attributesToScan) where T : SortableCityWeatherAttribute;
+    Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute;
     Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false) where T : SortableCityWeatherAttribute;
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
     void DeleteCity(City city);
-    void CreateWeatherScoreInfo(CityStatWrapper cityStat);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
-    void CreateWeatherScoreKey(List<CityWeatherScore> cityScores);
-    void CreateIdealSunDaysScoreKey(List<CityIdealSunDays> cityScores);
-    void DeleteWeatherSortKey(string cityName);
-
+    void CreateSortableWeatherSortKey<T>(List<T> scores) where T: SortableCityWeatherAttribute;
 }
 
 public class DataLayer : IDataLayer
@@ -47,48 +43,21 @@ public class DataLayer : IDataLayer
         _table = Table.LoadTable(_client, TableName);
 
     }
-    public async Task<List<T>> GetExistingWeatherScoreAttribute<T>(string attributesToScan) where T : SortableCityWeatherAttribute
+    public async Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
         var scanResults = await PerformScan(attributesToScan);
         return scanResults.Items.Select(item => ItemFactory.ToSortableCityWeatherScoreItem<T>(item)).ToList();
     }
 
-    public async Task<List<T>> GetSortedCityScore<T>(string attributesToScan) where T : SortableCityWeatherAttribute
+    public async void CreateSortableWeatherSortKey<T>(List<T> scores) where T: SortableCityWeatherAttribute
     {
-        var scanResults = await PerformScan(attributesToScan);
-        return scanResults.Items.Select(item => ItemFactory.ToSortableCityWeatherScoreItem<T>(item)).ToList();
-    }
-
-    public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
-    {
-        var weatherScores = cityWeatherScores.Select(x => FormatCityWeatherScore(x)).ToList();
-        await BatchWriteItem(weatherScores);
-    }
-
-    public async void CreateIdealSunDaysScoreKey(List<CityIdealSunDays> citySunScores)
-    {
-        var sunScores = citySunScores.Select(x => FormatCityIdealSunDays(x)).ToList();
-        await BatchWriteItem(sunScores);
-
+        var dictToWrite = scores.Select(score => FromSortableWeatherScoreItem<T>(score)).ToList();
+        await BatchWriteItem(dictToWrite);
     }
 
     public async void DeleteCity(City city)
     {
-        await DeletePartitionAndItemAsync(city.CityName);
-    }
-
-    public async void DeleteWeatherSortKey(string cityName)
-    {
-        var rowsToDelete = await GetWeatherScoreKeysToDelete(cityName);
-        var deleteItemRequests = rowsToDelete.Select(del => new DeleteItemRequest {TableName = TableName, Key = del.Key});
-        foreach (var request in deleteItemRequests)
-        {
-            await _client.DeleteItemAsync(request);
-        }
-    }
-
-    public async Task DeletePartitionAndItemAsync(string cityName)
-    {
+        var cityName = city.CityName;
         var queryRequest = new QueryRequest
         {
             TableName = TableName,
@@ -133,7 +102,6 @@ public class DataLayer : IDataLayer
                 Console.WriteLine($"Transaction failed: {ex.Message}");
             }
         }
-
     }
 
     private async Task<List<Delete>> GetWeatherScoreKeysToDelete(string cityName)
@@ -177,26 +145,6 @@ public class DataLayer : IDataLayer
 
         var scanResponse = await _client.ScanAsync(scanRequest);
         return scanResponse;
-    }
-
-    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingNewKey()
-    {
-        var stopwatch = new Stopwatch();
-        List<CityWeatherScore> cityScores = new List<CityWeatherScore>();
-        stopwatch.Start();
-        var queryRequest = new QueryRequest
-        {
-            TableName = TableName,
-            KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
-                { ":sk", new AttributeValue { S = $"WEATHERSCORE" } },
-            }
-        };
-        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
-        var toDict = queryResponse.Items;
-        return ItemFactory.ToCityWeatherScores(toDict);
     }
 
      public async Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false)
@@ -275,64 +223,10 @@ public class DataLayer : IDataLayer
             { "WeatherScore", new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
         };
 
-       var weatherScoreItem = FormatCityWeatherScore(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
-       var sunDaysItem = FormatCityIdealSunDays(new CityIdealSunDays(city.CityName, city.CityStats.IdealSunshineDays));
-       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem, sunDaysItem});
-    }
-
-    public async void CreateWeatherScoreInfo(CityStatWrapper cityStat)
-    {
-        var request = new UpdateItemRequest
-        {
-            TableName = TableName,
-            Key = new Dictionary<string, AttributeValue> {
-                { "PK", new AttributeValue { S = $"CITY#{cityStat.CityName}" } },
-                { "SK", new AttributeValue { S = $"CITY#{cityStat.CityName}" } },
-            },
-            ExpressionAttributeNames = new Dictionary<string, string>
-            {
-                {"#TS", "TempScore"},
-                {"#SS", "SunScore"},
-                {"#HS", "HumScore"},
-                {"#WS", "WeatherScore"},
-                {"#ITD", "IdealTempDays"},
-                {"#ISD", "IdealSunDays"}
-            },
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                {":tempScore", new AttributeValue { N = cityStat.TemperatureScore.ToString() }},
-                {":sunScore", new AttributeValue { N = cityStat.SunshineScore.ToString() }},
-                {":humScore", new AttributeValue { N = cityStat.HumidityScore.ToString() }},
-                {":weatherScore", new AttributeValue { N = cityStat.WeatherScore.ToString() }},
-                {":idealTempDays", new AttributeValue { N = cityStat.IdealTempRangeDays.ToString() }},
-                {":idealSunDays", new AttributeValue { N = cityStat.IdealSunshineDays.ToString() }}
-            },
-            // Set the update expression for updating Price and Name
-            UpdateExpression = "SET #TS = :tempScore, #SS = :sunScore, #HS = :humScore, #WS = :weatherScore, #ITD = :idealTempDays, #ISD = :idealSunDays",
-            ReturnValues = "UPDATED_NEW" // Specifies that you want to get the new values of the updated attributes
-        };
-        try
-        {
-            // Send the update item request
-            var response = _client.UpdateItemAsync(request).Result;
-
-            // Output the updated attributes
-            Console.WriteLine("Updated item:");
-            foreach (var attribute in response.Attributes)
-            {
-                Console.WriteLine($"{attribute.Key}: {attribute.Value.S ?? attribute.Value.N}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating item in DynamoDB: {ex.Message}");
-        }
-    }
-
-    public async void CreateWeatherHistoryItem(WeatherHistory historyItem)
-    {
-        var formattedHistoryItem = FormatHistoryItem(historyItem);
-        await WriteItem(formattedHistoryItem);
+       var weatherScoreItem = FromSortableWeatherScoreItem<CityWeatherScore>(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
+       var sunDaysItem = FromSortableWeatherScoreItem<CityIdealSunDays>(new CityIdealSunDays(city.CityName, city.CityStats.IdealSunshineDays));
+       var idealTempDaysItem = FromSortableWeatherScoreItem<CityIdealTempDays>(new CityIdealTempDays(city.CityName, city.CityStats.IdealTempRangeDays));
+       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem, sunDaysItem, idealTempDaysItem});
     }
 
     public async void CreateWeatherHistoryItems(List<WeatherHistory> historyItems)
@@ -341,27 +235,33 @@ public class DataLayer : IDataLayer
         await BatchWriteItem(historyItemsToWrite);
     }
 
-    private static Dictionary<string, AttributeValue> FormatCityWeatherScore(CityWeatherScore weatherScore)
+    private static Dictionary<string, AttributeValue> FromSortableWeatherScoreItem<T>(T item) where T : SortableCityWeatherAttribute
     {
-        var cityName = weatherScore.CityName.ToUpper().Replace(" ", "-");
-        return new Dictionary<string, AttributeValue>
+        var startingDict = new Dictionary<string, AttributeValue>
         {
             { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
-            { "SK", new AttributeValue { S = $"WEATHERSCORE#{weatherScore.GetStringKeyForWeatherScore().PadLeft(10, '0')}#CITY#{cityName}" } },
-            { "CityName", new AttributeValue { S = $"{cityName}" } },
+            { "CityName", new AttributeValue { S = $"{item.CityName}" } },
         };
+        var skSuffix = $"#{item.GetFormattedNumber()}#CITY#{item.CityName}";
+        if (typeof(T) == typeof(CityWeatherScore))
+        {
+            startingDict["SK"] = new AttributeValue { S = $"WEATHERSCORE{skSuffix}"};
+            return startingDict;
+        }
+
+        if (typeof(T) == typeof(CityIdealSunDays))
+        {
+            startingDict["SK"] = new AttributeValue { S = $"IDEALSUNDAYS{skSuffix}"};
+            return startingDict;
+        }
+        if (typeof(T) == typeof(CityIdealTempDays))
+        {
+            startingDict["SK"] = new AttributeValue { S = $"IDEALTEMPDAYS{skSuffix}"};
+            return startingDict;
+        }
+          throw new InvalidOperationException("Unsupported type");
     }
 
-    private static Dictionary<string, AttributeValue> FormatCityIdealSunDays(CityIdealSunDays cityIdealSunDays)
-    {
-        return new Dictionary<string, AttributeValue>
-        {
-            { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
-            { "SK", new AttributeValue { S = $"IDEALSUNDAYS#{cityIdealSunDays.IdealSunDays.ToString("D4")}#CITY#{cityIdealSunDays.CityName}" } },
-            { "CityName", new AttributeValue { S = $"{cityIdealSunDays.CityName}" } },
-        };
-    }
-    
     private static Dictionary<string, AttributeValue> FormatHistoryItem(WeatherHistory historyItem)
     {
         var cityName = historyItem.CityName.ToUpper().Replace(" ", "-");

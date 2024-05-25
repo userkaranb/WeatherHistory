@@ -8,7 +8,7 @@ public interface ICityWeatherHistoryApiCaller
 }
 public class CityWeatherHistoryApiCaller : ICityWeatherHistoryApiCaller
 {
-    private HttpClient _client;
+    private readonly HttpClient _client;
     const string KEY = "YLQ4H9DL7KCFMPEA6PDFU2W59";
     const string URI = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
 
