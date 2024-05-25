@@ -20,6 +20,7 @@ public interface IDataLayer
     void CreateWeatherHistoryItem(WeatherHistory historyItem);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateWeatherScoreKey(List<CityWeatherScore> cityScores);
+    void DeleteWeatherSortKey(string cityName);
 
 }
 
@@ -73,6 +74,16 @@ public class DataLayer : IDataLayer
         await DeletePartitionAndItemAsync(city.CityName);
     }
 
+    public async void DeleteWeatherSortKey(string cityName)
+    {
+        var rowsToDelete = await GetWeatherScoreKeysToDelete(cityName);
+        var deleteItemRequests = rowsToDelete.Select(del => new DeleteItemRequest {TableName = TableName, Key = del.Key});
+        foreach (var request in deleteItemRequests)
+        {
+            await _client.DeleteItemAsync(request);
+        }
+    }
+
     public async Task DeletePartitionAndItemAsync(string cityName)
     {
         var queryRequest = new QueryRequest
@@ -84,22 +95,9 @@ public class DataLayer : IDataLayer
                 { ":pk", new AttributeValue { S = GetCityPK(cityName) } }
             }
         };
-        var extraQueryRequest = new QueryRequest
-        {
-            TableName = TableName,
-            KeyConditionExpression = "PK = :pk",
-            FilterExpression = "contains(CityName, :str)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":pk", new AttributeValue { S = GetCityWeatherScorePK() } },
-                { ":str", new AttributeValue { S = $"{cityName}" } }
-            }
-        };
-
+        var extraItemsToDelete = await GetWeatherScoreKeysToDelete(cityName);
         var queryResponse = await _client.QueryAsync(queryRequest);
-        var extraQueryResponse = await _client.QueryAsync(extraQueryRequest);
-
-        var transactItems = new List<TransactWriteItem>();
+        var transactItems  = extraItemsToDelete.Select(x => new Amazon.DynamoDBv2.Model.TransactWriteItem { Delete = x}).ToList();
 
         foreach (var item in queryResponse.Items)
         {
@@ -115,21 +113,7 @@ public class DataLayer : IDataLayer
             transactItems.Add(new TransactWriteItem { Delete = deleteRequest });
         }
 
-        foreach (var item in extraQueryResponse.Items)
-        {
-            var deleteRequest = new Delete
-            {
-                TableName = TableName,
-                Key = new Dictionary<string, AttributeValue>
-                {
-                    { "PK", item["PK"] },
-                    { "SK", item["SK"] }
-                }
-            };
-            transactItems.Add(new TransactWriteItem { Delete = deleteRequest });
-        }
-
-        foreach(var chunk in transactItems.Chunk(25))
+        foreach (var chunk in transactItems.Chunk(25))
         {
             var transactWriteItemsRequest = new TransactWriteItemsRequest
             {
@@ -144,15 +128,35 @@ public class DataLayer : IDataLayer
             catch (Exception ex)
             {
                 Console.WriteLine($"Transaction failed: {ex.Message}");
-            }   
+            }
         }
-        
+
     }
 
-    private void GetAllSortedWeatherScores()
+    private async Task<List<Delete>> GetWeatherScoreKeysToDelete(string cityName)
     {
-        // option 1: use the new PK cretaed by the backfill
-        // option 2: create a new function that gets all objects where a PK is like something and SK is like something
+        var extraQueryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk",
+            FilterExpression = "contains(CityName, :str)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = GetCityWeatherScorePK() } },
+                { ":str", new AttributeValue { S = $"{cityName}" } }
+            }
+        };
+
+        var extraQueryResponse = await _client.QueryAsync(extraQueryRequest);
+        return extraQueryResponse.Items.Select(item => new Delete
+            {
+                TableName = TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", item["PK"] },
+                    { "SK", item["SK"] }
+                }
+            }).ToList();
     }
 
     private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingScan()
@@ -190,10 +194,11 @@ public class DataLayer : IDataLayer
         var queryRequest = new QueryRequest
         {
             TableName = TableName,
-            KeyConditionExpression = "PK = :pk",
+            KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
+                { ":sk", new AttributeValue { S = $"WEATHERSCORE" } },
             }
         };
         var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
@@ -217,24 +222,6 @@ public class DataLayer : IDataLayer
         Console.WriteLine(city.CityName);
         var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
-    }
-
-    public List<City> GetWeatherScoreRankings()
-    {
-        var useGsi = false;
-        if(useGsi)
-        {
-            // Create a new PK called: CityWeatherScore
-            // SortKeys are <WeatherScoreAmount>#CityName
-        }
-        else
-        {
-            // Get all Cities
-            // Sort them by WeatherScore
-
-        }
-        return new List<City>();
-
     }
 
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName)
@@ -340,8 +327,8 @@ public class DataLayer : IDataLayer
         var cityName = weatherScore.CityName.ToUpper().Replace(" ", "-");
         return new Dictionary<string, AttributeValue>
         {
-            { "PK", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
-            { "SK", new AttributeValue { S = $"{weatherScore.GetStringKeyForWeatherScore().PadLeft(10, '0')}#CITY#{cityName}" } },
+            { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
+            { "SK", new AttributeValue { S = $"WEATHERSCORE#{weatherScore.GetStringKeyForWeatherScore().PadLeft(10, '0')}#CITY#{cityName}" } },
             { "CityName", new AttributeValue { S = $"{cityName}" } },
         };
     }
@@ -455,7 +442,7 @@ public class DataLayer : IDataLayer
         return $"CITY#{cityName}";
     }
 
-    private string GetCityWeatherScorePK()
+    private static string GetCityWeatherScorePK()
     {
         return $"CITY-WEATHER-SCORE";
     }

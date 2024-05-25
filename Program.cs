@@ -97,11 +97,10 @@ app.MapRazorPages();
 // Backfiller.Execute();
 // Backfiller.ExecuteWeatherScoreBackfill();
 
-// var backfiller = container.Resolve<IBackfiller>();
-// backfiller.CreateWeatherScorePK();
+var backfiller = container.Resolve<IBackfiller>();
+backfiller.CreateWeatherScorePK();
 
 // TO DO:
-// CREATE A DELETE CITY ENDPOINT THAT DELETES ALL INFO, AND WEATHER HISTORY
 // ADD ONE MORE THING, LIKE IDEAL TEMP DAYS
 // PRODUCTIONIZE APP (HIDE DB CREDENTIALS, WRITE TESTS, CLEAN UP WARNINGS)
 

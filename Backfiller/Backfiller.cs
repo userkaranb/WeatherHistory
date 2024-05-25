@@ -38,7 +38,16 @@ public class Backfiller : IBackfiller
     public async Task CreateWeatherScorePK()
     {
         var combos = await _dataLayer.GetAllCityWeatherScoreCombos();
+        await DeleteExistingWeatherScorePK(combos.Select(x => x.CityName).ToList());
         _dataLayer.CreateWeatherScoreKey(combos);
+    }
+
+    public async Task DeleteExistingWeatherScorePK(List<string> cityNames)
+    {
+        foreach(var cityName in cityNames)
+        {
+            _dataLayer.DeleteWeatherSortKey(cityName);
+        }
     }
 
     public async Task Execute(List<string>? cityList = null)

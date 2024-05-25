@@ -89,7 +89,7 @@ public class ItemFactory
       List<CityWeatherScore> retVals = new List<CityWeatherScore>();
       foreach(var val in values)
       {
-        var cityScore = float.Parse(val["SK"].S.Split("#")[0]);
+        var cityScore = float.Parse(val["SK"].S.Split("#")[1]);
         var cityName = val["CityName"].S;
         retVals.Add(new CityWeatherScore(cityName, cityScore));
       }
