@@ -84,6 +84,18 @@ public class ItemFactory
         return new WeatherHistory(cityName, date, humidity, temperature, sunshine);
     }
 
+    public static List<CityWeatherScore> ToCityWeatherScores(List<Dictionary<string, AttributeValue>> values)
+    {
+      List<CityWeatherScore> retVals = new List<CityWeatherScore>();
+      foreach(var val in values)
+      {
+        var cityScore = float.Parse(val["SK"].S.Split("#")[0]);
+        var cityName = val["CityName"].S;
+        retVals.Add(new CityWeatherScore(cityName, cityScore));
+      }
+      return retVals;
+    }
+
     public static CityWeatherScore ToCityWeatherScore(Dictionary<string, AttributeValue> values)
     {
        string cityName = "";

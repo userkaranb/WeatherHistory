@@ -50,14 +50,14 @@ public class DataLayer : IDataLayer
         // Convert all city names to cities
         // Get all City Objects to get weather scores
         // in another function, write the new keys.
-        var useNewCode = false;
+        var useNewCode = true;
         if(!useNewCode)
         {
             var scannedResponse = await GetAllCityWeatherScoreCombosUsingScan();
             return scannedResponse.OrderBy(x => x.WeatherScore).ToList();
         }
 
-        return null;
+        return await GetAllCityWeatherScoreCombosUsingNewKey();
     }
 
     public async void CreateWeatherScoreKey(List<CityWeatherScore> cityWeatherScores)
@@ -95,8 +95,27 @@ public class DataLayer : IDataLayer
             cityScores.Add(ItemFactory.ToCityWeatherScore(item));
         }
         stopwatch.Stop();
-        Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Elapsed time scanning: {stopwatch.ElapsedMilliseconds} ms");
         return cityScores;
+    }
+
+    private async Task<List<CityWeatherScore>> GetAllCityWeatherScoreCombosUsingNewKey()
+    {
+        var stopwatch = new Stopwatch();
+        List<CityWeatherScore> cityScores = new List<CityWeatherScore>();
+        stopwatch.Start();
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
+            }
+        };
+        var queryResponse = _client.QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var toDict = queryResponse.Items;
+        return ItemFactory.ToCityWeatherScores(toDict);
     }
 
     public City GetCity(City city)
