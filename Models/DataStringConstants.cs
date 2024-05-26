@@ -2,10 +2,13 @@ using System.Reflection.Metadata;
 
 public static class DataStringConstants
 {
+    public const string PK = "PK";
+    public const string SK = "SK";
     public static class SortableCityStatsSKValues
     {
         public const string IdealSunDays = "IDEALSUNDAYS";
         public const string WeatherScore = "WEATHERSCORE";
+        public const string IdealTempDays = "IDEALTEMPDAYS";
     }
 
     public static class CityDataObject
@@ -18,4 +21,12 @@ public static class DataStringConstants
         public const string IdealTempDays = "IdealTempDays";
         public const string IdealSunDays = "IdealSunDays";
     }
+    public static class WeatherHistoryDataObject
+    {
+        public const string Humidity = "Humidity";
+        public const string Sunshine = "Sunshine";
+        public const string Temperature = "Temperature";
+        public const string Date = "Date";
+    }
+
 }

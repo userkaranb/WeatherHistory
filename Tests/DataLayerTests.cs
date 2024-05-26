@@ -38,8 +38,8 @@ public class DataLayerTests
             {
                 new Dictionary<string, AttributeValue>
                 {
-                    { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
-                    { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+                    { DataStringConstants.PK, new AttributeValue { S = $"CITY#{city.CityName}" } },
+                    { DataStringConstants.SK, new AttributeValue { S = $"CITY#{city.CityName}" } },
                     { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{city.CityName}" } }
                 }
             }
@@ -82,8 +82,8 @@ public class DataLayerTests
         {
             new Dictionary<string, AttributeValue>
             {
-                { "PK", new AttributeValue { S = "CITY#NEW-YORK" } },
-                { "SK", new AttributeValue { S = "WEATHERSCORE#75#CITY#NEW-YORK" } },
+                { DataStringConstants.PK, new AttributeValue { S = "CITY#NEW-YORK" } },
+                { DataStringConstants.SK, new AttributeValue { S = "WEATHERSCORE#75#CITY#NEW-YORK" } },
                 { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = "NEW-YORK" } },
                 { DataStringConstants.CityDataObject.WeatherScore, new AttributeValue { S = "75" } }
             }
@@ -112,8 +112,8 @@ public class DataLayerTests
         {
             new Dictionary<string, AttributeValue>
             {
-                { "PK", new AttributeValue { S = "CITY#New York" } },
-                { "SK", new AttributeValue { S = "CITY#New York" } }
+                { DataStringConstants.PK, new AttributeValue { S = "CITY#New York" } },
+                { DataStringConstants.SK, new AttributeValue { S = "CITY#New York" } }
             }
         }
         };

@@ -66,17 +66,17 @@ public class ItemFactory
                 case DataStringConstants.CityDataObject.CityName:
                     cityName = values[DataStringConstants.CityDataObject.CityName].S;
                     break;
-                case "Humidity":
-                    humidity = GetValue<double>(values["Humidity"]);
+                case DataStringConstants.WeatherHistoryDataObject.Humidity:
+                    humidity = GetValue<double>(values[DataStringConstants.WeatherHistoryDataObject.Humidity]);
                     break;
-                case "Sunshine":
-                    sunshine = GetValue<double>(values["Sunshine"]);
+                case DataStringConstants.WeatherHistoryDataObject.Sunshine:
+                    sunshine = GetValue<double>(values[DataStringConstants.WeatherHistoryDataObject.Sunshine]);
                     break;
-                case "Temperature":
-                    temperature = GetValue<double>(values["Temperature"]);
+                case DataStringConstants.WeatherHistoryDataObject.Temperature:
+                    temperature = GetValue<double>(values[DataStringConstants.WeatherHistoryDataObject.Temperature]);
                     break;
-                case "Date":
-                    date = values["Date"].S;
+                case DataStringConstants.WeatherHistoryDataObject.Date:
+                    date = values[DataStringConstants.WeatherHistoryDataObject.Date].S;
                     break;
                 case null:
                     continue;
@@ -93,21 +93,24 @@ public class ItemFactory
         {
             foreach (var val in values)
             {
-                retVals.Add(new CityWeatherScore(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<float>(val)) as T);
+                retVals.Add(new CityWeatherScore(val[DataStringConstants.CityDataObject.CityName].S,
+                GetSortableWeatherAttributeFromSortKey<float>(val)) as T);
             }
         }
         if (typeof(T) == typeof(CityIdealSunDays))
         {
             foreach (var val in values)
             {
-                retVals.Add(new CityIdealSunDays(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+                retVals.Add(new CityIdealSunDays(val[DataStringConstants.CityDataObject.CityName].S,
+                GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
             }
         }
         if (typeof(T) == typeof(CityIdealTempDays))
         {
             foreach (var val in values)
             {
-                retVals.Add(new CityIdealTempDays(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+                retVals.Add(new CityIdealTempDays(val[DataStringConstants.CityDataObject.CityName].S,
+                GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
             }
         }
 
@@ -143,7 +146,7 @@ public class ItemFactory
 
     private static T GetSortableWeatherAttributeFromSortKey<T>(Dictionary<string, AttributeValue> val)
     {
-        string stringValue = val["SK"].S.Split("#")[1];
+        string stringValue = val[DataStringConstants.SK].S.Split("#")[1];
         return (T)Convert.ChangeType(stringValue, typeof(T));
     }
 

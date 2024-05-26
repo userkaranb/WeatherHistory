@@ -12,7 +12,7 @@ public interface IDataLayer
     Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false) where T : SortableCityWeatherAttribute;
     public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
     void CreateCity(City city);
-    void DeleteCity(City city);
+    Task DeleteCity(City city);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateSortableWeatherSortKey<T>(List<T> scores) where T : SortableCityWeatherAttribute;
 }
@@ -40,7 +40,7 @@ public class DataLayer : IDataLayer
         await BatchWriteItem(dictToWrite);
     }
 
-    public async void DeleteCity(City city)
+    public async Task DeleteCity(City city)
     {
         var cityName = city.CityName;
         var queryRequest = new QueryRequest
@@ -63,8 +63,8 @@ public class DataLayer : IDataLayer
                 TableName = TableName,
                 Key = new Dictionary<string, AttributeValue>
                 {
-                    { "PK", item["PK"] },
-                    { "SK", item["SK"] }
+                    { DataStringConstants.PK, item[DataStringConstants.PK] },
+                    { DataStringConstants.SK, item[DataStringConstants.SK] }
                 }
             };
             transactItems.Add(new TransactWriteItem { Delete = deleteRequest });
@@ -109,8 +109,8 @@ public class DataLayer : IDataLayer
             TableName = TableName,
             Key = new Dictionary<string, AttributeValue>
                 {
-                    { "PK", item["PK"] },
-                    { "SK", item["SK"] }
+                    { DataStringConstants.PK, item[DataStringConstants.PK] },
+                    { DataStringConstants.SK, item[DataStringConstants.SK] }
                 }
         }).ToList();
     }
@@ -197,8 +197,8 @@ public class DataLayer : IDataLayer
     {
         var item = new Dictionary<string, AttributeValue>
         {
-            { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
-            { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+            { DataStringConstants.PK, new AttributeValue { S = GetCityPK(city.CityName) } },
+            { DataStringConstants.SK, new AttributeValue { S = GetCityPK(city.CityName) } },
             { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{city.CityName}" } },
             { DataStringConstants.CityDataObject.TempScore, new AttributeValue { S = city.CityStats?.TemperatureScore.ToString().Trim() } },
             { DataStringConstants.CityDataObject.HumScore, new AttributeValue { S = city.CityStats?.HumidityScore.ToString().Trim() } },
@@ -224,24 +224,24 @@ public class DataLayer : IDataLayer
     {
         var startingDict = new Dictionary<string, AttributeValue>
         {
-            { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
+            { DataStringConstants.PK, new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
             { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{item.CityName}" } },
         };
         var skSuffix = $"#{item.GetFormattedNumber()}#CITY#{item.CityName}";
         if (typeof(T) == typeof(CityWeatherScore))
         {
-            startingDict["SK"] = new AttributeValue { S = $"WEATHERSCORE{skSuffix}" };
+            startingDict[DataStringConstants.SK] = new AttributeValue { S = $"{DataStringConstants.SortableCityStatsSKValues.WeatherScore}{skSuffix}" };
             return startingDict;
         }
 
         if (typeof(T) == typeof(CityIdealSunDays))
         {
-            startingDict["SK"] = new AttributeValue { S = $"IDEALSUNDAYS{skSuffix}" };
+            startingDict[DataStringConstants.SK] = new AttributeValue { S = $"{DataStringConstants.SortableCityStatsSKValues.IdealSunDays}{skSuffix}" };
             return startingDict;
         }
         if (typeof(T) == typeof(CityIdealTempDays))
         {
-            startingDict["SK"] = new AttributeValue { S = $"IDEALTEMPDAYS{skSuffix}" };
+            startingDict[DataStringConstants.SK] = new AttributeValue { S = $"{DataStringConstants.SortableCityStatsSKValues.IdealTempDays}{skSuffix}" };
             return startingDict;
         }
         throw new InvalidOperationException("Unsupported type");
@@ -252,13 +252,13 @@ public class DataLayer : IDataLayer
         var cityName = historyItem.CityName.ToUpper().Replace(" ", "-");
         return new Dictionary<string, AttributeValue>
         {
-            { "PK", new AttributeValue { S = $"CITY#{historyItem.CityName}" } },
-            { "SK", new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
+            { DataStringConstants.PK, new AttributeValue { S = GetCityPK(historyItem.CityName) } },
+            { DataStringConstants.SK, new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
             { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{cityName}" } },
-            { "Date", new AttributeValue { S = historyItem.Date.ToString() } },
-            { "Temperature", new AttributeValue { S = historyItem.Temperature.ToString() } },
-            { "Sunshine", new AttributeValue { S = historyItem.Sunshine.ToString() } },
-            { "Humidity", new AttributeValue { S = historyItem.Humidity.ToString() } },
+            { DataStringConstants.WeatherHistoryDataObject.Date, new AttributeValue { S = historyItem.Date.ToString() } },
+            { DataStringConstants.WeatherHistoryDataObject.Temperature, new AttributeValue { S = historyItem.Temperature.ToString() } },
+            { DataStringConstants.WeatherHistoryDataObject.Sunshine, new AttributeValue { S = historyItem.Sunshine.ToString() } },
+            { DataStringConstants.WeatherHistoryDataObject.Humidity, new AttributeValue { S = historyItem.Humidity.ToString() } },
         };
     }
 
@@ -353,7 +353,7 @@ public class DataLayer : IDataLayer
         }
     }
 
-    private string GetCityPK(string cityName)
+    private static string GetCityPK(string cityName)
     {
         return $"CITY#{cityName}";
     }
