@@ -40,7 +40,7 @@ public class DataLayerTests
                 {
                     { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
                     { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
-                    { "CityName", new AttributeValue { S = $"{city.CityName}" } }
+                    { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{city.CityName}" } }
                 }
             }
         };
@@ -53,7 +53,7 @@ public class DataLayerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(city.CityName, result.CityName);
+        Assert.Equal("NEW-YORK", result.CityName);
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public class DataLayerTests
             {
                 { "PK", new AttributeValue { S = "CITY#NEW-YORK" } },
                 { "SK", new AttributeValue { S = "WEATHERSCORE#75#CITY#NEW-YORK" } },
-                { "CityName", new AttributeValue { S = "NEW-YORK" } },
-                { "WeatherScore", new AttributeValue { S = "75" } }
+                { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = "NEW-YORK" } },
+                { DataStringConstants.CityDataObject.WeatherScore, new AttributeValue { S = "75" } }
             }
         }
         };

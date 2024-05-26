@@ -199,13 +199,13 @@ public class DataLayer : IDataLayer
         {
             { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
             { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
-            { "CityName", new AttributeValue { S = $"{city.CityName}" } },
-            { "TempScore", new AttributeValue { S = city.CityStats?.TemperatureScore.ToString().Trim() } },
-            { "HumScore", new AttributeValue { S = city.CityStats?.HumidityScore.ToString().Trim() } },
-            { "IdealSunDays", new AttributeValue { S = city.CityStats?.IdealSunshineDays.ToString().Trim() } },
-            { "IdealTempDays", new AttributeValue { S = city.CityStats?.IdealTempRangeDays.ToString().Trim() } },
-            { "SunScore", new AttributeValue { S = city.CityStats?.SunshineScore.ToString().Trim() } },
-            { "WeatherScore", new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{city.CityName}" } },
+            { DataStringConstants.CityDataObject.TempScore, new AttributeValue { S = city.CityStats?.TemperatureScore.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.HumScore, new AttributeValue { S = city.CityStats?.HumidityScore.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.IdealSunDays, new AttributeValue { S = city.CityStats?.IdealSunshineDays.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.IdealTempDays, new AttributeValue { S = city.CityStats?.IdealTempRangeDays.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.SunScore, new AttributeValue { S = city.CityStats?.SunshineScore.ToString().Trim() } },
+            { DataStringConstants.CityDataObject.WeatherScore, new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
         };
 
         var weatherScoreItem = FromSortableWeatherScoreItem<CityWeatherScore>(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
@@ -225,7 +225,7 @@ public class DataLayer : IDataLayer
         var startingDict = new Dictionary<string, AttributeValue>
         {
             { "PK", new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
-            { "CityName", new AttributeValue { S = $"{item.CityName}" } },
+            { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{item.CityName}" } },
         };
         var skSuffix = $"#{item.GetFormattedNumber()}#CITY#{item.CityName}";
         if (typeof(T) == typeof(CityWeatherScore))
@@ -254,7 +254,7 @@ public class DataLayer : IDataLayer
         {
             { "PK", new AttributeValue { S = $"CITY#{historyItem.CityName}" } },
             { "SK", new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
-            { "CityName", new AttributeValue { S = $"{cityName}" } },
+            { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{cityName}" } },
             { "Date", new AttributeValue { S = historyItem.Date.ToString() } },
             { "Temperature", new AttributeValue { S = historyItem.Temperature.ToString() } },
             { "Sunshine", new AttributeValue { S = historyItem.Sunshine.ToString() } },

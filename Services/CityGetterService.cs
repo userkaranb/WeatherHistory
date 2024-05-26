@@ -1,6 +1,6 @@
 
 using Jubilado;
-using Jubilado.Persistence; 
+using Jubilado.Persistence;
 using System.Diagnostics;
 
 public interface ICityGetterService
@@ -21,7 +21,7 @@ public class CityGetterService : ICityGetterService
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var results = await _dataLayer.GetSortedWeatherStat<CityWeatherScore>("WEATHERSCORE");
+        var results = await _dataLayer.GetSortedWeatherStat<CityWeatherScore>(DataStringConstants.SortableCityStatsSKValues.WeatherScore);
         stopwatch.Stop();
         Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
         return results;
@@ -31,7 +31,7 @@ public class CityGetterService : ICityGetterService
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var results = await _dataLayer.GetSortedWeatherStat<CityIdealSunDays>("IDEALSUNDAYS", true);
+        var results = await _dataLayer.GetSortedWeatherStat<CityIdealSunDays>(DataStringConstants.SortableCityStatsSKValues.IdealSunDays, true);
         stopwatch.Stop();
         Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
         return results;

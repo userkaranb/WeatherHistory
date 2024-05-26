@@ -8,9 +8,9 @@ public class ItemFactory
 {
     public static City ToCity(Dictionary<string, AttributeValue> values)
     {
-        if(!values.ContainsKey("CityName"))
+        if (!values.ContainsKey(DataStringConstants.CityDataObject.CityName))
         {
-          return City.EmptyCity();
+            return City.EmptyCity();
         }
         string cityName = "";
         float weatherScore = -1f;
@@ -19,36 +19,36 @@ public class ItemFactory
         float humScore = -1f;
         int idealTempDays = -1;
         int idealSunDays = -1;
-        foreach(var kvp in values)
+        foreach (var kvp in values)
         {
-            switch(kvp.Key)
+            switch (kvp.Key as string)
             {
-                case "CityName":
-                  cityName = values["CityName"].S;
-                  break;
-                case "WeatherScore":
-                  weatherScore = GetValue<float>(values["WeatherScore"]);
-                  break;
-                case "TempScore":
-                  tempScore = GetValue<float>(values["TempScore"]);
-                  break;
-                case "SunScore":
-                  sunScore = GetValue<float>(values["SunScore"]);
-                  break;
-                case "HumScore":
-                  humScore = GetValue<float>(values["HumScore"]);
-                  break;
-                case "IdealTempDays":
-                  idealTempDays = GetValue<int>(values["IdealTempDays"]);
-                  break;
-                case "IdealSunDays":
-                  idealSunDays = GetValue<int>(values["IdealSunDays"]);
-                  break;
+                case DataStringConstants.CityDataObject.CityName:
+                    cityName = values[DataStringConstants.CityDataObject.CityName].S;
+                    break;
+                case DataStringConstants.CityDataObject.WeatherScore:
+                    weatherScore = GetValue<float>(values[DataStringConstants.CityDataObject.WeatherScore]);
+                    break;
+                case DataStringConstants.CityDataObject.TempScore:
+                    tempScore = GetValue<float>(values[DataStringConstants.CityDataObject.TempScore]);
+                    break;
+                case DataStringConstants.CityDataObject.SunScore:
+                    sunScore = GetValue<float>(values[DataStringConstants.CityDataObject.SunScore]);
+                    break;
+                case DataStringConstants.CityDataObject.HumScore:
+                    humScore = GetValue<float>(values[DataStringConstants.CityDataObject.HumScore]);
+                    break;
+                case DataStringConstants.CityDataObject.IdealTempDays:
+                    idealTempDays = GetValue<int>(values[DataStringConstants.CityDataObject.IdealTempDays]);
+                    break;
+                case DataStringConstants.CityDataObject.IdealSunDays:
+                    idealSunDays = GetValue<int>(values[DataStringConstants.CityDataObject.IdealSunDays]);
+                    break;
                 case null:
                     continue;
             }
         }
-        var wrapper = new CityStatWrapper(cityName, tempScore, 
+        var wrapper = new CityStatWrapper(cityName, tempScore,
         sunScore, humScore, weatherScore, idealTempDays, idealSunDays);
         return new City(cityName, wrapper);
     }
@@ -59,25 +59,25 @@ public class ItemFactory
         double temperature = -1;
         double sunshine = -1;
         string date = "";
-        foreach(var kvp in values)
+        foreach (var kvp in values)
         {
-            switch(kvp.Key)
+            switch (kvp.Key)
             {
-                case "CityName":
-                  cityName = values["CityName"].S;
-                  break;
+                case DataStringConstants.CityDataObject.CityName:
+                    cityName = values[DataStringConstants.CityDataObject.CityName].S;
+                    break;
                 case "Humidity":
-                  humidity = GetValue<double>(values["Humidity"]);
-                  break;
+                    humidity = GetValue<double>(values["Humidity"]);
+                    break;
                 case "Sunshine":
-                  sunshine = GetValue<double>(values["Sunshine"]);
-                  break;
+                    sunshine = GetValue<double>(values["Sunshine"]);
+                    break;
                 case "Temperature":
-                  temperature = GetValue<double>(values["Temperature"]);
-                  break;
+                    temperature = GetValue<double>(values["Temperature"]);
+                    break;
                 case "Date":
-                  date = values["Date"].S;
-                  break;
+                    date = values["Date"].S;
+                    break;
                 case null:
                     continue;
             }
@@ -88,63 +88,63 @@ public class ItemFactory
     public static List<T> ToSortableCityScoreBulk<T>(List<Dictionary<string, AttributeValue>> values)
       where T : SortableCityWeatherAttribute
     {
-      List<T> retVals = new List<T>();
-      if (typeof(T) == typeof(CityWeatherScore))
-      {
-        foreach(var val in values)
+        List<T> retVals = new List<T>();
+        if (typeof(T) == typeof(CityWeatherScore))
         {
-          retVals.Add(new CityWeatherScore(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<float>(val)) as T);
+            foreach (var val in values)
+            {
+                retVals.Add(new CityWeatherScore(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<float>(val)) as T);
+            }
         }
-      }
-      if (typeof(T) == typeof(CityIdealSunDays))
-      {
-        foreach(var val in values)
+        if (typeof(T) == typeof(CityIdealSunDays))
         {
-          retVals.Add(new CityIdealSunDays(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+            foreach (var val in values)
+            {
+                retVals.Add(new CityIdealSunDays(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+            }
         }
-      }
-      if (typeof(T) == typeof(CityIdealTempDays))
-      {
-        foreach(var val in values)
+        if (typeof(T) == typeof(CityIdealTempDays))
         {
-          retVals.Add(new CityIdealTempDays(val["CityName"].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+            foreach (var val in values)
+            {
+                retVals.Add(new CityIdealTempDays(val[DataStringConstants.CityDataObject.CityName].S, GetSortableWeatherAttributeFromSortKey<int>(val)) as T);
+            }
         }
-      }
 
-      return retVals;
+        return retVals;
 
     }
 
-    public static T1 ToSortableCityWeatherScoreItem<T1>(Dictionary<string, AttributeValue> values) 
+    public static T1 ToSortableCityWeatherScoreItem<T1>(Dictionary<string, AttributeValue> values)
       where T1 : SortableCityWeatherAttribute
     {
-      var cityName = values["CityName"].S;
-      if (typeof(T1) == typeof(CityWeatherScore))
-      {
-        return new CityWeatherScore(cityName, GetValue<float>(values["WeatherScore"])) as T1;
-      }
-      if (typeof(T1) == typeof(CityIdealSunDays))
-      {
-          return new CityIdealSunDays(cityName, GetValue<int>(values["IdealSunDays"])) as T1;
-      }
-      if (typeof(T1) == typeof(CityIdealTempDays))
-      {
-          return new CityIdealTempDays(cityName, GetValue<int>(values["IdealTempDays"])) as T1;
-      }
+        var cityName = values[DataStringConstants.CityDataObject.CityName].S;
+        if (typeof(T1) == typeof(CityWeatherScore))
+        {
+            return new CityWeatherScore(cityName, GetValue<float>(values[DataStringConstants.CityDataObject.WeatherScore])) as T1;
+        }
+        if (typeof(T1) == typeof(CityIdealSunDays))
+        {
+            return new CityIdealSunDays(cityName, GetValue<int>(values[DataStringConstants.CityDataObject.IdealSunDays])) as T1;
+        }
+        if (typeof(T1) == typeof(CityIdealTempDays))
+        {
+            return new CityIdealTempDays(cityName, GetValue<int>(values[DataStringConstants.CityDataObject.IdealTempDays])) as T1;
+        }
 
-      throw new InvalidOperationException("Unsupported type");
+        throw new InvalidOperationException("Unsupported type");
     }
 
-  private static T GetValue<T>(AttributeValue val)
-  {
-    string stringValue = val.S ?? val.N; // Assuming either S or N is not null.
-    return (T)Convert.ChangeType(stringValue, typeof(T));
-  }
+    private static T GetValue<T>(AttributeValue val)
+    {
+        string stringValue = val.S ?? val.N; // Assuming either S or N is not null.
+        return (T)Convert.ChangeType(stringValue, typeof(T));
+    }
 
-  private static T GetSortableWeatherAttributeFromSortKey<T>(Dictionary<string, AttributeValue> val)
-  {
-    string stringValue = val["SK"].S.Split("#")[1];
-    return (T)Convert.ChangeType(stringValue, typeof(T));
-  }
+    private static T GetSortableWeatherAttributeFromSortKey<T>(Dictionary<string, AttributeValue> val)
+    {
+        string stringValue = val["SK"].S.Split("#")[1];
+        return (T)Convert.ChangeType(stringValue, typeof(T));
+    }
 
 }
