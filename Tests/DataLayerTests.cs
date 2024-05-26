@@ -2,18 +2,28 @@ using Xunit;
 using Moq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using Amazon.DynamoDBv2.DocumentModel;
 using Jubilado;
 using Jubilado.Persistence;
+
+namespace JubiladoUnitTests;
 
 public class DataLayerTests
 {
     private readonly Mock<IAmazonDynamoDB> _mockDynamoDbClient;
+    private readonly Mock<ITableLoader> _mockTableLoader;
+
     private readonly DataLayer _dataLayer;
 
     public DataLayerTests()
     {
         _mockDynamoDbClient = new Mock<IAmazonDynamoDB>();
-        _dataLayer = new DataLayer(_mockDynamoDbClient.Object);
+        _mockTableLoader = new Mock<ITableLoader>();
+        // var mockTable = new Mock<Table>(_mockDynamoDbClient.Object, "Jubilado");
+        _mockTableLoader.Setup(loader => loader.LoadTable(It.IsAny<IAmazonDynamoDB>(), It.IsAny<string>()))
+                        .Returns(It.IsAny<Table>);
+
+        _dataLayer = new DataLayer(_mockDynamoDbClient.Object, _mockTableLoader.Object);
     }
 
     [Fact]

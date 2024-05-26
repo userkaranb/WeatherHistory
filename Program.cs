@@ -72,6 +72,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
             var credentialService = context.Resolve<CredentialService>();
             return credentialService.GetInitializedDynamoClient().GetAwaiter().GetResult();
         }).As<IAmazonDynamoDB>();
+        containerBuilder.RegisterType<TableLoader>().As<ITableLoader>();
         containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
         containerBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
         containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
@@ -96,7 +97,7 @@ app.MapGet("/foo", async context =>
 
 app.MapControllers();
 
-app.UseHttpsRedirection(); 
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();

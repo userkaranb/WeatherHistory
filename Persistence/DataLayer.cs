@@ -14,7 +14,7 @@ public interface IDataLayer
     void CreateCity(City city);
     void DeleteCity(City city);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
-    void CreateSortableWeatherSortKey<T>(List<T> scores) where T: SortableCityWeatherAttribute;
+    void CreateSortableWeatherSortKey<T>(List<T> scores) where T : SortableCityWeatherAttribute;
 }
 
 public class DataLayer : IDataLayer
@@ -23,10 +23,10 @@ public class DataLayer : IDataLayer
     const string TableName = "Jubilado";
     private readonly IAmazonDynamoDB _dynamoDbClient;
 
-    public DataLayer(IAmazonDynamoDB dynamoDbClient)
+    public DataLayer(IAmazonDynamoDB dynamoDbClient, ITableLoader tableLoader)
     {
         _dynamoDbClient = dynamoDbClient;
-        _table = Table.LoadTable(_dynamoDbClient, TableName);
+        _table = tableLoader.LoadTable(dynamoDbClient, TableName);
     }
     public async Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
@@ -34,7 +34,7 @@ public class DataLayer : IDataLayer
         return scanResults.Items.Select(item => ItemFactory.ToSortableCityWeatherScoreItem<T>(item)).ToList();
     }
 
-    public async void CreateSortableWeatherSortKey<T>(List<T> scores) where T: SortableCityWeatherAttribute
+    public async void CreateSortableWeatherSortKey<T>(List<T> scores) where T : SortableCityWeatherAttribute
     {
         var dictToWrite = scores.Select(score => FromSortableWeatherScoreItem<T>(score)).ToList();
         await BatchWriteItem(dictToWrite);
@@ -53,8 +53,8 @@ public class DataLayer : IDataLayer
             }
         };
         var extraItemsToDelete = await GetWeatherScoreKeysToDelete(cityName);
-        var queryResponse = await GetAwsClient().QueryAsync(queryRequest);
-        var transactItems  = extraItemsToDelete.Select(x => new Amazon.DynamoDBv2.Model.TransactWriteItem { Delete = x}).ToList();
+        var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
+        var transactItems = extraItemsToDelete.Select(x => new Amazon.DynamoDBv2.Model.TransactWriteItem { Delete = x }).ToList();
 
         foreach (var item in queryResponse.Items)
         {
@@ -79,7 +79,7 @@ public class DataLayer : IDataLayer
 
             try
             {
-                await GetAwsClient().TransactWriteItemsAsync(transactWriteItemsRequest);
+                await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItemsRequest);
                 Console.WriteLine("Transaction succeeded.");
             }
             catch (Exception ex)
@@ -103,16 +103,16 @@ public class DataLayer : IDataLayer
             }
         };
 
-        var extraQueryResponse = await GetAwsClient().QueryAsync(extraQueryRequest);
+        var extraQueryResponse = await _dynamoDbClient.QueryAsync(extraQueryRequest);
         return extraQueryResponse.Items.Select(item => new Delete
-            {
-                TableName = TableName,
-                Key = new Dictionary<string, AttributeValue>
+        {
+            TableName = TableName,
+            Key = new Dictionary<string, AttributeValue>
                 {
                     { "PK", item["PK"] },
                     { "SK", item["SK"] }
                 }
-            }).ToList();
+        }).ToList();
     }
 
     private async Task<ScanResponse> PerformScan(string projectionExpressionFields)
@@ -128,12 +128,12 @@ public class DataLayer : IDataLayer
             ProjectionExpression = projectionExpressionFields
         };
 
-        var scanResponse = await GetAwsClient().ScanAsync(scanRequest);
+        var scanResponse = await _dynamoDbClient.ScanAsync(scanRequest);
         return scanResponse;
     }
 
-     public async Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false)
-        where T : SortableCityWeatherAttribute
+    public async Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false)
+       where T : SortableCityWeatherAttribute
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
@@ -148,11 +148,11 @@ public class DataLayer : IDataLayer
             }
         };
 
-        if(isOrderDescending)
+        if (isOrderDescending)
         {
             queryRequest.ScanIndexForward = false;
         }
-        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = _dynamoDbClient.QueryAsync(queryRequest).GetAwaiter().GetResult();
         var toDict = queryResponse.Items;
         return ItemFactory.ToSortableCityScoreBulk<T>(toDict);
     }
@@ -169,7 +169,7 @@ public class DataLayer : IDataLayer
                 { ":sk", new AttributeValue { S = $"CITY#{city.CityName}" } }
             }
         };
-        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = _dynamoDbClient.QueryAsync(queryRequest).GetAwaiter().GetResult();
         Console.WriteLine(city.CityName);
         var toDict = queryResponse.Items.FirstOrDefault(new Dictionary<string, AttributeValue>()).ToDictionary<string, AttributeValue>();
         return ItemFactory.ToCity(toDict);
@@ -188,7 +188,7 @@ public class DataLayer : IDataLayer
                 { ":sk", new AttributeValue { S = $"WEATHERHISTORY#" } }
             }
         };
-        var queryResponse = GetAwsClient().QueryAsync(queryRequest).GetAwaiter().GetResult();
+        var queryResponse = _dynamoDbClient.QueryAsync(queryRequest).GetAwaiter().GetResult();
         return queryResponse.Items.Select(x => ItemFactory.ToWeatherHistory(x)).ToList();
     }
 
@@ -208,10 +208,10 @@ public class DataLayer : IDataLayer
             { "WeatherScore", new AttributeValue { S = city.CityStats?.WeatherScore.ToString().Trim() } },
         };
 
-       var weatherScoreItem = FromSortableWeatherScoreItem<CityWeatherScore>(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
-       var sunDaysItem = FromSortableWeatherScoreItem<CityIdealSunDays>(new CityIdealSunDays(city.CityName, city.CityStats.IdealSunshineDays));
-       var idealTempDaysItem = FromSortableWeatherScoreItem<CityIdealTempDays>(new CityIdealTempDays(city.CityName, city.CityStats.IdealTempRangeDays));
-       await TransactWriteItem(new List<Dictionary<string, AttributeValue>>{item, weatherScoreItem, sunDaysItem, idealTempDaysItem});
+        var weatherScoreItem = FromSortableWeatherScoreItem<CityWeatherScore>(new CityWeatherScore(city.CityName, city.CityStats.WeatherScore));
+        var sunDaysItem = FromSortableWeatherScoreItem<CityIdealSunDays>(new CityIdealSunDays(city.CityName, city.CityStats.IdealSunshineDays));
+        var idealTempDaysItem = FromSortableWeatherScoreItem<CityIdealTempDays>(new CityIdealTempDays(city.CityName, city.CityStats.IdealTempRangeDays));
+        await TransactWriteItem(new List<Dictionary<string, AttributeValue>> { item, weatherScoreItem, sunDaysItem, idealTempDaysItem });
     }
 
     public async void CreateWeatherHistoryItems(List<WeatherHistory> historyItems)
@@ -230,21 +230,21 @@ public class DataLayer : IDataLayer
         var skSuffix = $"#{item.GetFormattedNumber()}#CITY#{item.CityName}";
         if (typeof(T) == typeof(CityWeatherScore))
         {
-            startingDict["SK"] = new AttributeValue { S = $"WEATHERSCORE{skSuffix}"};
+            startingDict["SK"] = new AttributeValue { S = $"WEATHERSCORE{skSuffix}" };
             return startingDict;
         }
 
         if (typeof(T) == typeof(CityIdealSunDays))
         {
-            startingDict["SK"] = new AttributeValue { S = $"IDEALSUNDAYS{skSuffix}"};
+            startingDict["SK"] = new AttributeValue { S = $"IDEALSUNDAYS{skSuffix}" };
             return startingDict;
         }
         if (typeof(T) == typeof(CityIdealTempDays))
         {
-            startingDict["SK"] = new AttributeValue { S = $"IDEALTEMPDAYS{skSuffix}"};
+            startingDict["SK"] = new AttributeValue { S = $"IDEALTEMPDAYS{skSuffix}" };
             return startingDict;
         }
-          throw new InvalidOperationException("Unsupported type");
+        throw new InvalidOperationException("Unsupported type");
     }
 
     private static Dictionary<string, AttributeValue> FormatHistoryItem(WeatherHistory historyItem)
@@ -273,7 +273,7 @@ public class DataLayer : IDataLayer
         // Execute PutItem request
         try
         {
-            var resp = await GetAwsClient().PutItemAsync(request);
+            var resp = await _dynamoDbClient.PutItemAsync(request);
             Console.WriteLine("Event inserted successfully.");
         }
         catch (Exception ex)
@@ -284,8 +284,8 @@ public class DataLayer : IDataLayer
 
     private async Task TransactWriteItem(List<Dictionary<string, AttributeValue>> items)
     {
-        var putRequests = items.Select(item => new Put{Item = item, TableName = TableName}).ToList();
-        var transactItems = putRequests.Select(item => new TransactWriteItem{Put = item}).ToList();
+        var putRequests = items.Select(item => new Put { Item = item, TableName = TableName }).ToList();
+        var transactItems = putRequests.Select(item => new TransactWriteItem { Put = item }).ToList();
         var request = new TransactWriteItemsRequest
         {
             TransactItems = transactItems
@@ -293,7 +293,7 @@ public class DataLayer : IDataLayer
 
         try
         {
-            var response = await GetAwsClient().TransactWriteItemsAsync(request);
+            var response = await _dynamoDbClient.TransactWriteItemsAsync(request);
             Console.WriteLine("Transaction succeeded.");
         }
         catch (Exception ex)
@@ -304,7 +304,8 @@ public class DataLayer : IDataLayer
 
     private async Task BatchWriteItem(List<Dictionary<string, AttributeValue>> items)
     {
-        var writeItems = items.Select(kvp => new WriteRequest{
+        var writeItems = items.Select(kvp => new WriteRequest
+        {
             PutRequest = new PutRequest(kvp)
         }).ToList();
         var chunkedItems = writeItems.Chunk(25).ToList();
@@ -315,12 +316,13 @@ public class DataLayer : IDataLayer
             {
                 {_table.TableName, chunk.ToList()}
             };
-            BatchWriteItemRequest request = new BatchWriteItemRequest(){
+            BatchWriteItemRequest request = new BatchWriteItemRequest()
+            {
                 RequestItems = requestItems
             };
-             try
+            try
             {
-                var resp = await GetAwsClient().BatchWriteItemAsync(request);
+                var resp = await _dynamoDbClient.BatchWriteItemAsync(request);
                 Console.WriteLine("Event inserted successfully.");
             }
             catch (Exception ex)
@@ -342,7 +344,7 @@ public class DataLayer : IDataLayer
         // Execute PutItem request
         try
         {
-            var resp = await GetAwsClient().UpdateItemAsync(request);
+            var resp = await _dynamoDbClient.UpdateItemAsync(request);
             Console.WriteLine("Event inserted successfully.");
         }
         catch (Exception ex)
@@ -359,14 +361,5 @@ public class DataLayer : IDataLayer
     private static string GetCityWeatherScorePK()
     {
         return $"CITY-WEATHER-SCORE";
-    }
-
-    private AmazonDynamoDBClient GetAwsClient()
-    {
-        if (_dynamoDbClient is AmazonDynamoDBClient client)
-        {
-            return client;
-        }
-        throw new InvalidOperationException("Unable to cast IAmazonDynamoDB to AmazonDynamoDBClient.");
     }
 }
