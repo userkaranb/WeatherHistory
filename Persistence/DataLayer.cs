@@ -20,11 +20,7 @@ public interface IDataLayer
 public class DataLayer : IDataLayer
 {
     private Table _table;
-    const String TableName = "Jubilado";
-    const String PK = "PK";
-    const String SK = "SK";
-    const String GSI1PK = "GSI1PK";
-    const String GSISK = "GSI1SK";
+    const string TableName = "Jubilado";
     private readonly IAmazonDynamoDB _dynamoDbClient;
 
     public DataLayer(IAmazonDynamoDB dynamoDbClient)
