@@ -38,8 +38,9 @@ public class DataLayerTests
             {
                 new Dictionary<string, AttributeValue>
                 {
-                    { "PK", new AttributeValue { S = $"CITY#{cityName}" } },
-                    { "SK", new AttributeValue { S = $"CITY#{cityName}" } }
+                    { "PK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+                    { "SK", new AttributeValue { S = $"CITY#{city.CityName}" } },
+                    { "CityName", new AttributeValue { S = $"{city.CityName}" } }
                 }
             }
         };
@@ -52,7 +53,7 @@ public class DataLayerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(cityName, result.CityName);
+        Assert.Equal(city.CityName, result.CityName);
     }
 
     [Fact]
@@ -61,14 +62,14 @@ public class DataLayerTests
         // Arrange
         var city = new City("New York", new CityStatWrapper("New York", 75f, 50f, 100f, 75f, 10, 10));
         _mockDynamoDbClient
-            .Setup(client => client.PutItemAsync(It.IsAny<PutItemRequest>(), default))
-            .Returns(Task.FromResult(new PutItemResponse()));
+            .Setup(client => client.TransactWriteItemsAsync(It.IsAny<TransactWriteItemsRequest>(), default))
+            .Returns(Task.FromResult(new TransactWriteItemsResponse()));
 
         // Act
         _dataLayer.CreateCity(city);
 
         // Assert
-        _mockDynamoDbClient.Verify(client => client.PutItemAsync(It.IsAny<PutItemRequest>(), default), Times.Once);
+        _mockDynamoDbClient.Verify(client => client.TransactWriteItemsAsync(It.IsAny<TransactWriteItemsRequest>(), default), Times.Once);
     }
 
     [Fact]
@@ -81,8 +82,10 @@ public class DataLayerTests
         {
             new Dictionary<string, AttributeValue>
             {
-                { "PK", new AttributeValue { S = "CITY#New York" } },
-                { "SK", new AttributeValue { S = "WEATHERSCORE#75#CITY#New York" } }
+                { "PK", new AttributeValue { S = "CITY#NEW-YORK" } },
+                { "SK", new AttributeValue { S = "WEATHERSCORE#75#CITY#NEW-YORK" } },
+                { "CityName", new AttributeValue { S = "NEW-YORK" } },
+                { "WeatherScore", new AttributeValue { S = "75" } }
             }
         }
         };
@@ -91,7 +94,7 @@ public class DataLayerTests
             .ReturnsAsync(scanResponse);
 
         // Act
-        var result = await _dataLayer.GetExistingWeatherScoreAttributeByScan<CityWeatherScore>("PK, SK");
+        var result = await _dataLayer.GetExistingWeatherScoreAttributeByScan<CityWeatherScore>("CityName, WeatherScore");
 
         // Assert
         Assert.NotNull(result);
