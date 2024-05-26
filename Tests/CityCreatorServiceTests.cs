@@ -64,18 +64,4 @@ public class CityCreatorServiceTests
         // Assert
         _mockDataLayer.Verify(d => d.DeleteCity(city), Times.Once);
     }
-
-    // [Fact]
-    // public void CalculateIdealMetric_ShouldReturnCorrectAverage()
-    // {
-    //     // Arrange
-    //     var metrics = new List<float> { 70f, 80f, 75f };
-    //     var ideal = 75f;
-
-    //     // Act
-    //     var result = _service.CalculateIdealMetric(metrics, ideal);
-
-    //     // Assert
-    //     Assert.Equal(5f, result);
-    // }
 }

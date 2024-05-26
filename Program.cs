@@ -21,12 +21,13 @@
 ....* ... 
 */
 
-using Jubilado;
 using Jubilado.Persistence;
-using System;
 using System.Diagnostics;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Amazon.SecretsManager;
+using Amazon.DynamoDBv2;
+
 
 ProcessStartInfo processStartInfo = new ProcessStartInfo
 {
@@ -63,6 +64,14 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     {
         // Register your Autofac services here
         containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
+        containerBuilder.RegisterType<AmazonSecretsManagerClient>().As<IAmazonSecretsManager>();
+        containerBuilder.RegisterType<CredentialService>().AsSelf();
+
+        containerBuilder.Register(context =>
+        {
+            var credentialService = context.Resolve<CredentialService>();
+            return credentialService.GetInitializedDynamoClient().GetAwaiter().GetResult();
+        }).As<IAmazonDynamoDB>();
         containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
         containerBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
         containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();

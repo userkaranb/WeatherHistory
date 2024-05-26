@@ -1,11 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
-using Amazon.Runtime;
-using Amazon.SecretsManager;
 using System.Diagnostics;
-using Newtonsoft.Json;
-
 
 namespace Jubilado.Persistence;
 
@@ -24,19 +20,17 @@ public interface IDataLayer
 public class DataLayer : IDataLayer
 {
     private Table _table;
-    private AmazonDynamoDBClient _client;
     const String TableName = "Jubilado";
     const String PK = "PK";
     const String SK = "SK";
     const String GSI1PK = "GSI1PK";
     const String GSISK = "GSI1SK";
-    BasicAWSCredentials? credentials = null;
-    public DataLayer()
-    {
-        // this is bad
-        
-        // Use accessKey and secretKey to configure DynamoDB client
+    private readonly IAmazonDynamoDB _dynamoDbClient;
 
+    public DataLayer(IAmazonDynamoDB dynamoDbClient)
+    {
+        _dynamoDbClient = dynamoDbClient;
+        _table = Table.LoadTable(_dynamoDbClient, TableName);
     }
     public async Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
@@ -373,27 +367,10 @@ public class DataLayer : IDataLayer
 
     private AmazonDynamoDBClient GetAwsClient()
     {
-        if(_client == null)
+        if (_dynamoDbClient is AmazonDynamoDBClient client)
         {
-            var client = new AmazonSecretsManagerClient();
-            var secretService = new SecretManagerService(client);
-            string secretName = "DDB-Jubilado";
-            string secretJson = secretService.GetSecretAsync(secretName).GetAwaiter().GetResult();
-
-            // Parse the JSON to extract the access key and secret
-            var secretData = JsonConvert.DeserializeObject<Dictionary<string, string>>(secretJson);
-            var awsCredentials = new BasicAWSCredentials(secretData.Keys.First(), secretData.Values.First());
-            var dynamoDBConfig = new AmazonDynamoDBConfig
-            {
-                RegionEndpoint = Amazon.RegionEndpoint.USEast2 // Replace YOUR_REGION with your AWS region
-            };
-
-            _client = new AmazonDynamoDBClient(awsCredentials, dynamoDBConfig);
-            _table = Table.LoadTable(_client, TableName);
-
+            return client;
         }
-        return _client;
-
+        throw new InvalidOperationException("Unable to cast IAmazonDynamoDB to AmazonDynamoDBClient.");
     }
-
 }
