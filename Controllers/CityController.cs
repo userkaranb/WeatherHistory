@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Jubilado.Controllers
 {
-    
+
     [Route("api/[controller]")]
     [ApiController]
     public class CityController : ControllerBase
@@ -45,7 +45,7 @@ namespace Jubilado.Controllers
         [HttpGet("{cityName}/weatherhistory")]
         public JsonResult GetWeatherHistory(string cityName)
         {
-            return new JsonResult(_dataLayer.GetWeatherHistoryForCity(cityName));
+            return new JsonResult(_dataLayer.GetWeatherHistoryForCity(new City(cityName)));
         }
 
         [HttpGet("topweatherscores")]

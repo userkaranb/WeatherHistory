@@ -52,7 +52,7 @@ public class CityCreatorService : ICityCreatorService
         foreach (var city in cities)
         {
             var cityName = city.CityName;
-            var weatehrHistory = _dataLayer.GetWeatherHistoryForCity(cityName);
+            var weatehrHistory = _dataLayer.GetWeatherHistoryForCity(city);
             var weatherStats = CalculateWeatherScore(cityName, weatehrHistory);
             results[city] = weatherStats;
         }

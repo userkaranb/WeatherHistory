@@ -10,7 +10,7 @@ public interface IDataLayer
     public City GetCity(City city);
     Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute;
     Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false) where T : SortableCityWeatherAttribute;
-    public List<WeatherHistory> GetWeatherHistoryForCity(string cityName);
+    public List<WeatherHistory> GetWeatherHistoryForCity(City city);
     void CreateCity(City city);
     Task DeleteCity(City city);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
@@ -89,49 +89,6 @@ public class DataLayer : IDataLayer
         }
     }
 
-    private async Task<List<Delete>> GetWeatherScoreKeysToDelete(string cityName)
-    {
-        var extraQueryRequest = new QueryRequest
-        {
-            TableName = TableName,
-            KeyConditionExpression = "PK = :pk",
-            FilterExpression = "contains(CityName, :str)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":pk", new AttributeValue { S = GetCityWeatherScorePK() } },
-                { ":str", new AttributeValue { S = $"{cityName}" } }
-            }
-        };
-
-        var extraQueryResponse = await _dynamoDbClient.QueryAsync(extraQueryRequest);
-        return extraQueryResponse.Items.Select(item => new Delete
-        {
-            TableName = TableName,
-            Key = new Dictionary<string, AttributeValue>
-                {
-                    { DataStringConstants.PK, item[DataStringConstants.PK] },
-                    { DataStringConstants.SK, item[DataStringConstants.SK] }
-                }
-        }).ToList();
-    }
-
-    private async Task<ScanResponse> PerformScan(string projectionExpressionFields)
-    {
-        var scanRequest = new ScanRequest
-        {
-            TableName = TableName,
-            FilterExpression = "begins_with(SK, :skPrefix)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":skPrefix", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#" } }
-            },
-            ProjectionExpression = projectionExpressionFields
-        };
-
-        var scanResponse = await _dynamoDbClient.ScanAsync(scanRequest);
-        return scanResponse;
-    }
-
     public async Task<List<T>> GetSortedWeatherStat<T>(string sortKeyIdentifier, bool isOrderDescending = false)
        where T : SortableCityWeatherAttribute
     {
@@ -175,16 +132,15 @@ public class DataLayer : IDataLayer
         return ItemFactory.ToCity(toDict);
     }
 
-    public List<WeatherHistory> GetWeatherHistoryForCity(string cityName)
+    public List<WeatherHistory> GetWeatherHistoryForCity(City city)
     {
-        var cityNameUpper = cityName.ToUpper();
         var queryRequest = new QueryRequest
         {
             TableName = TableName,
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":pk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#{cityNameUpper}" } },
+                { ":pk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#{city.CityName}" } },
                 { ":sk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.WeatherHistoryKey}#" } }
             }
         };
@@ -314,7 +270,7 @@ public class DataLayer : IDataLayer
             Console.WriteLine("Processing Chunk");
             var requestItems = new Dictionary<string, List<WriteRequest>>()
             {
-                {_table.TableName, chunk.ToList()}
+                {TableName, chunk.ToList()}
             };
             BatchWriteItemRequest request = new BatchWriteItemRequest()
             {
@@ -361,5 +317,48 @@ public class DataLayer : IDataLayer
     private static string GetCityWeatherScorePK()
     {
         return $"{DataStringConstants.SortableCityStatsSKValues.CityWeatherScorePK}";
+    }
+
+    private async Task<List<Delete>> GetWeatherScoreKeysToDelete(string cityName)
+    {
+        var extraQueryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            KeyConditionExpression = "PK = :pk",
+            FilterExpression = "contains(CityName, :str)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = GetCityWeatherScorePK() } },
+                { ":str", new AttributeValue { S = $"{cityName}" } }
+            }
+        };
+
+        var extraQueryResponse = await _dynamoDbClient.QueryAsync(extraQueryRequest);
+        return extraQueryResponse.Items.Select(item => new Delete
+        {
+            TableName = TableName,
+            Key = new Dictionary<string, AttributeValue>
+                {
+                    { DataStringConstants.PK, item[DataStringConstants.PK] },
+                    { DataStringConstants.SK, item[DataStringConstants.SK] }
+                }
+        }).ToList();
+    }
+
+    private async Task<ScanResponse> PerformScan(string projectionExpressionFields)
+    {
+        var scanRequest = new ScanRequest
+        {
+            TableName = TableName,
+            FilterExpression = "begins_with(SK, :skPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":skPrefix", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#" } }
+            },
+            ProjectionExpression = projectionExpressionFields
+        };
+
+        var scanResponse = await _dynamoDbClient.ScanAsync(scanRequest);
+        return scanResponse;
     }
 }
