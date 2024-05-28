@@ -114,8 +114,9 @@ app.MapRazorPages();
 
 // TO DO:
 
-// Remove db credentials
-// Add Tests
+// Add More Tests in data layer to make sure keys are formatted correctly
+// Controller tests?
+// Other access patterns?
 // Next API integration?
 
 app.Run();

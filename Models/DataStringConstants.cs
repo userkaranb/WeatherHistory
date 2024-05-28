@@ -9,6 +9,7 @@ public static class DataStringConstants
         public const string IdealSunDays = "IDEALSUNDAYS";
         public const string WeatherScore = "WEATHERSCORE";
         public const string IdealTempDays = "IDEALTEMPDAYS";
+        public const string CityWeatherScorePK = "CITY-WEATHER-SCORE";
     }
 
     public static class CityDataObject
@@ -20,6 +21,8 @@ public static class DataStringConstants
         public const string HumScore = "HumScore";
         public const string IdealTempDays = "IdealTempDays";
         public const string IdealSunDays = "IdealSunDays";
+        public const string WeatherHistoryKey = "WEATHERHISTORY";
+        public const string CityKey = "CITY";
     }
     public static class WeatherHistoryDataObject
     {

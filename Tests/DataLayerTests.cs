@@ -57,6 +57,35 @@ public class DataLayerTests
     }
 
     [Fact]
+    public async Task GetCity_ShouldPassInTheRightQuery()
+    {
+        var cityName = "New York";
+        var city = new City(cityName);
+        _mockDynamoDbClient
+            .Setup(client => client.QueryAsync(It.IsAny<QueryRequest>(), default))
+           .ReturnsAsync(new QueryResponse { Items = new List<Dictionary<string, AttributeValue>>() });
+
+        var desiredQueryRequest = new QueryRequest
+        {
+            TableName = "Jubilado",
+            KeyConditionExpression = "PK = :pk AND SK = :sk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = "CITY#NEW-YORK" } },
+                { ":sk", new AttributeValue { S = "CITY#NEW-YORK" } }
+            }
+        };
+        var result = _dataLayer.GetCity(city);
+
+        _mockDynamoDbClient.Verify(client => client.QueryAsync(It.Is<QueryRequest>(req =>
+       req.TableName == "Jubilado" &&
+       req.KeyConditionExpression == "PK = :pk AND SK = :sk" &&
+       req.ExpressionAttributeValues[":pk"].S == "CITY#NEW-YORK" &&
+       req.ExpressionAttributeValues[":sk"].S == "CITY#NEW-YORK"), default), Times.Once);
+
+    }
+
+    [Fact]
     public async Task CreateCity_ShouldCallPutItem()
     {
         // Arrange
@@ -70,6 +99,38 @@ public class DataLayerTests
 
         // Assert
         _mockDynamoDbClient.Verify(client => client.TransactWriteItemsAsync(It.IsAny<TransactWriteItemsRequest>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateCity_ShouldInsertTheRightPayload()
+    {
+        // Arrange
+        float tempScore = 75f;
+        float sunScore = 50f;
+        float humScore = 100f;
+        float weatherScore = 75f;
+        int idealTempDays = 10;
+        int idealSunDays = 10;
+        var city = new City("New York", new CityStatWrapper("NEW-YORK", tempScore, sunScore, humScore,
+        weatherScore, idealTempDays, idealSunDays));
+        _mockDynamoDbClient
+            .Setup(client => client.TransactWriteItemsAsync(It.IsAny<TransactWriteItemsRequest>(), default))
+            .Returns(Task.FromResult(new TransactWriteItemsResponse()));
+
+        // Act
+        _dataLayer.CreateCity(city);
+
+        // Assert
+        _mockDynamoDbClient.Verify(client => client.TransactWriteItemsAsync(It.Is<TransactWriteItemsRequest>(req =>
+      req.TransactItems.First().Put.Item["PK"].S == "CITY#NEW-YORK" &&
+      req.TransactItems.First().Put.Item["SK"].S == "CITY#NEW-YORK" &&
+      req.TransactItems.First().Put.Item["CityName"].S == "NEW-YORK" &&
+      req.TransactItems.First().Put.Item["HumScore"].S == humScore.ToString() &&
+      req.TransactItems.First().Put.Item["TempScore"].S == tempScore.ToString() &&
+      req.TransactItems.First().Put.Item["SunScore"].S == sunScore.ToString() &&
+      req.TransactItems.First().Put.Item["IdealTempDays"].S == idealTempDays.ToString() &&
+      req.TransactItems.First().Put.Item["IdealSunDays"].S == idealSunDays.ToString()), default), Times.Once);
+
     }
 
     [Fact]

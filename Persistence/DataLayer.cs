@@ -123,7 +123,7 @@ public class DataLayer : IDataLayer
             FilterExpression = "begins_with(SK, :skPrefix)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":skPrefix", new AttributeValue { S = "CITY#" } }
+                { ":skPrefix", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#" } }
             },
             ProjectionExpression = projectionExpressionFields
         };
@@ -143,7 +143,7 @@ public class DataLayer : IDataLayer
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":pk", new AttributeValue { S = $"CITY-WEATHER-SCORE" } },
+                { ":pk", new AttributeValue { S = $"{DataStringConstants.SortableCityStatsSKValues.CityWeatherScorePK}" } },
                 { ":sk", new AttributeValue { S = sortKeyIdentifier } },
             }
         };
@@ -165,8 +165,8 @@ public class DataLayer : IDataLayer
             KeyConditionExpression = "PK = :pk AND SK = :sk",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":pk", new AttributeValue { S = $"CITY#{city.CityName}" } },
-                { ":sk", new AttributeValue { S = $"CITY#{city.CityName}" } }
+                { ":pk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#{city.CityName}" } },
+                { ":sk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#{city.CityName}" } }
             }
         };
         var queryResponse = _dynamoDbClient.QueryAsync(queryRequest).GetAwaiter().GetResult();
@@ -184,8 +184,8 @@ public class DataLayer : IDataLayer
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                { ":pk", new AttributeValue { S = $"CITY#{cityNameUpper}" } },
-                { ":sk", new AttributeValue { S = $"WEATHERHISTORY#" } }
+                { ":pk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.CityKey}#{cityNameUpper}" } },
+                { ":sk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.WeatherHistoryKey}#" } }
             }
         };
         var queryResponse = _dynamoDbClient.QueryAsync(queryRequest).GetAwaiter().GetResult();
@@ -227,7 +227,7 @@ public class DataLayer : IDataLayer
             { DataStringConstants.PK, new AttributeValue { S = $"{GetCityWeatherScorePK()}" } },
             { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{item.CityName}" } },
         };
-        var skSuffix = $"#{item.GetFormattedNumber()}#CITY#{item.CityName}";
+        var skSuffix = $"#{item.GetFormattedNumber()}#{DataStringConstants.CityDataObject.CityKey}#{item.CityName}";
         if (typeof(T) == typeof(CityWeatherScore))
         {
             startingDict[DataStringConstants.SK] = new AttributeValue { S = $"{DataStringConstants.SortableCityStatsSKValues.WeatherScore}{skSuffix}" };
@@ -253,7 +253,7 @@ public class DataLayer : IDataLayer
         return new Dictionary<string, AttributeValue>
         {
             { DataStringConstants.PK, new AttributeValue { S = GetCityPK(historyItem.CityName) } },
-            { DataStringConstants.SK, new AttributeValue { S = $"WEATHERHISTORY#{historyItem.Date.ToString()}" } },
+            { DataStringConstants.SK, new AttributeValue { S = $"{DataStringConstants.CityDataObject.WeatherHistoryKey}#{historyItem.Date.ToString()}" } },
             { DataStringConstants.CityDataObject.CityName, new AttributeValue { S = $"{cityName}" } },
             { DataStringConstants.WeatherHistoryDataObject.Date, new AttributeValue { S = historyItem.Date.ToString() } },
             { DataStringConstants.WeatherHistoryDataObject.Temperature, new AttributeValue { S = historyItem.Temperature.ToString() } },
@@ -355,11 +355,11 @@ public class DataLayer : IDataLayer
 
     private static string GetCityPK(string cityName)
     {
-        return $"CITY#{cityName}";
+        return $"{DataStringConstants.CityDataObject.CityKey}#{cityName}";
     }
 
     private static string GetCityWeatherScorePK()
     {
-        return $"CITY-WEATHER-SCORE";
+        return $"{DataStringConstants.SortableCityStatsSKValues.CityWeatherScorePK}";
     }
 }
