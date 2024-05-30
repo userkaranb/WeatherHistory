@@ -15,6 +15,7 @@ public interface IDataLayer
     Task DeleteCity(City city);
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateSortableWeatherSortKey<T>(List<T> scores) where T : SortableCityWeatherAttribute;
+    Task BackfillGSIForWeatherHistory();
 }
 
 public class DataLayer : IDataLayer
@@ -38,6 +39,58 @@ public class DataLayer : IDataLayer
     {
         var dictToWrite = scores.Select(score => FromSortableWeatherScoreItem<T>(score)).ToList();
         await BatchWriteItem(dictToWrite);
+    }
+
+    public async Task BackfillGSIForWeatherHistory()
+    {
+        var scanRequest = new ScanRequest
+        {
+            TableName = TableName,
+            FilterExpression = "begins_with(SK, :skPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":skPrefix", new AttributeValue { S = $"{DataStringConstants.CityDataObject.WeatherHistoryKey}#" } }
+            }
+        };
+
+        var scanResponse = await _dynamoDbClient.ScanAsync(scanRequest);
+        var transactWriteItems = new List<TransactWriteItem>();
+
+        foreach (var item in scanResponse.Items)
+        {
+            var updateRequest = new Update
+            {
+                TableName = TableName,
+                Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", item["PK"] },
+                { "SK", item["SK"] }
+            },
+                UpdateExpression = "SET GSI1PK = :val1, GSI1SK = :val2",
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":val1", item["SK"] },
+                { ":val2", item["PK"] }
+            }
+            };
+
+            transactWriteItems.Add(new TransactWriteItem { Update = updateRequest });
+        }
+
+        var request = new TransactWriteItemsRequest
+        {
+            TransactItems = transactWriteItems
+        };
+
+        try
+        {
+            var response = await _dynamoDbClient.TransactWriteItemsAsync(request);
+            Console.WriteLine("Bulk update succeeded.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Bulk update failed: {ex.Message}");
+        }
     }
 
     public async Task DeleteCity(City city)
@@ -241,20 +294,24 @@ public class DataLayer : IDataLayer
     private async Task TransactWriteItem(List<Dictionary<string, AttributeValue>> items)
     {
         var putRequests = items.Select(item => new Put { Item = item, TableName = TableName }).ToList();
-        var transactItems = putRequests.Select(item => new TransactWriteItem { Put = item }).ToList();
-        var request = new TransactWriteItemsRequest
+        var transactItems = putRequests.Select(item => new TransactWriteItem { Put = item }).ToList().Chunk(25).ToList();
+        foreach (var chunk in transactItems)
         {
-            TransactItems = transactItems
-        };
+            var request = new TransactWriteItemsRequest
+            {
+                TransactItems = chunk.ToList()
+            };
 
-        try
-        {
-            var response = await _dynamoDbClient.TransactWriteItemsAsync(request);
-            Console.WriteLine("Transaction succeeded.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Transaction failed: {ex.Message}");
+            try
+            {
+                var response = await _dynamoDbClient.TransactWriteItemsAsync(request);
+                Console.WriteLine("Transaction succeeded.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Transaction failed: {ex.Message}");
+            }
+
         }
     }
 

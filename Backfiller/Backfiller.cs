@@ -6,6 +6,8 @@ public interface IBackfiller
     Task BackfillCityCreation(List<string>? cityList);
 
     Task CreateGenericCityWeatherScoreSK();
+
+    Task BackfillGSIForWeatherHistory();
 }
 
 public class Backfiller : IBackfiller
@@ -23,6 +25,11 @@ public class Backfiller : IBackfiller
         _cityCreatorService = cityCreatorService;
     }
 
+    public async Task BackfillGSIForWeatherHistory()
+    {
+        _dataLayer.BackfillGSIForWeatherHistory();
+    }
+
     public async Task CreateGenericCityWeatherScoreSK()
     {
         // Go get all stats pertaining to the given key from the city object (need a datalayer function genericized)
@@ -35,7 +42,7 @@ public class Backfiller : IBackfiller
     public async Task BackfillCityCreation(List<string> cityList)
     {
         var citiesList = cityList.Select(cityString => new City(cityString)).ToList();
-        if(SHOULD_RUN)
+        if (SHOULD_RUN)
         {
             await _cityCreatorService.CreateCity(citiesList);
         }
