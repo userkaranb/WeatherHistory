@@ -8,18 +8,27 @@
 * Download Postman to do the same
 * Create route to put weather history
 * Create route to get weather history
-
 * Create a list of cities that I care about
 * Get one day worth of weather for each city, see what is missing, and fix
 * Make it so that script parses every city and casts results into weatherhistory objects
 * Write to db (BACKFILL)
-* Create Job to calculate weather score based off history
-* ...
+
+* CREATE A NEW LAMBDA WITHIN THIS SOLUTION (FIGURE OUT HOW TO CREATE NEW PROJECTS)
+* HAVE THE LAMBDA DO SOMETHING SIMPLE -- YOU INVOKE IT, AND IT PRINTS SOMETHING
+* CONNECT IT TO THE DATABASE - SOMETHING SIMPLE, JUST GET A RECORD FROM THE DB
+* CONNECT IT TO CALL GETWEATHERHISTORYBYCITY
+* WRITE ACTUAL MAD FUNCTION FOR WEATHER SCORE. foo.
+....* ... 
 */
 
-using Jubilado;
-using System;
+using Jubilado.Persistence;
 using System.Diagnostics;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Amazon.SecretsManager;
+using Amazon.DynamoDBv2;
+using FluentAssertions;
+
 
 ProcessStartInfo processStartInfo = new ProcessStartInfo
 {
@@ -41,14 +50,40 @@ string output = process.StandardOutput.ReadToEnd();
 
 // Wait for the process to exit
 process.WaitForExit();
+var autoFacBuilder = new ContainerBuilder();
+autoFacBuilder.RegisterType<DataLayer>().As<IDataLayer>();
+autoFacBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
+autoFacBuilder.RegisterType<Backfiller>().As<IBackfiller>();
+autoFacBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
+var container = autoFacBuilder.Build();
+
 var builder = WebApplication.CreateBuilder(args);
-Console.WriteLine("here");
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
+    .ConfigureContainer<ContainerBuilder>(containerBuilder =>
+    {
+        // Register your Autofac services here
+        containerBuilder.RegisterType<AmazonSecretsManagerClient>().As<IAmazonSecretsManager>();
+        containerBuilder.RegisterType<CredentialService>().AsSelf();
+
+        containerBuilder.Register(context =>
+        {
+            var credentialService = context.Resolve<CredentialService>();
+            return credentialService.GetInitializedDynamoClient().GetAwaiter().GetResult();
+        }).As<IAmazonDynamoDB>();
+        containerBuilder.RegisterType<TableLoader>().As<ITableLoader>();
+        containerBuilder.RegisterType<Backfiller>().As<IBackfiller>();
+        containerBuilder.RegisterType<DataLayer>().As<IDataLayer>();
+        containerBuilder.RegisterType<CityCreatorService>().As<ICityCreatorService>();
+        containerBuilder.RegisterType<CityWeatherHistoryApiCaller>().As<ICityWeatherHistoryApiCaller>();
+        containerBuilder.RegisterType<CityGetterService>().As<ICityGetterService>();
+    });
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -64,7 +99,7 @@ app.MapGet("/foo", async context =>
 
 app.MapControllers();
 
-app.UseHttpsRedirection(); 
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -73,7 +108,21 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
-Backfiller.Execute();
+// var backfiller = container.Resolve<IBackfiller>();
+// backfiller.BackfillGSIForWeatherHistory();
+
+// using (var scope = app.Services.CreateScope())
+// {
+//     var backfiller = scope.ServiceProvider.GetRequiredService<IBackfiller>();
+//     await backfiller.BackfillGSIForWeatherHistory(); // Call your method here
+// }
+
+// TO DO:
+
+// Add More Tests in data layer to make sure keys are formatted correctly
+// Controller tests?
+// Other access patterns?
+// Next API integration?
 
 app.Run();
 

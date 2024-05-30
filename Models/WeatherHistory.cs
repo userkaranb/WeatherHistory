@@ -4,11 +4,11 @@
 [Serializable()]
 public class WeatherHistory : Item
 {
-    public string CityName {private set; get;} 
-    public string Date {private set; get;}
-    public double Temperature {private set; get;}
-    public double Humidity {private set; get;}
-    public double Sunshine {private set; get;}
+    public string CityName { set; get; }
+    public string Date { set; get; }
+    public double Temperature { set; get; }
+    public double Humidity { set; get; }
+    public double Sunshine { set; get; }
 
     public WeatherHistory(string cityName, string date, double humidity, double temperature, double sunshine)
     {

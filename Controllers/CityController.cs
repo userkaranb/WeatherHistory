@@ -5,41 +5,68 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Jubilado.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class CityController : ControllerBase
     {
+        private readonly ICityCreatorService _cityCreatorService;
+        private readonly IDataLayer _dataLayer;
+        private readonly ICityGetterService _cityGetterService;
+        public CityController(ICityCreatorService cityCreatorService, IDataLayer dataLayer, ICityGetterService cityGetterService)
+        {
+            _cityCreatorService = cityCreatorService;
+            _dataLayer = dataLayer;
+            _cityGetterService = cityGetterService;
+        }
+
         [HttpGet("{cityName}")]
         public JsonResult Get(string cityName)
         {
-            return new JsonResult(new DataLayer().GetCity(cityName));
+            return new JsonResult(_dataLayer.GetCity(new City(cityName)));
         }
 
         [HttpPut()]
-        public IActionResult CreatCity([FromBody] City city)
+        public async Task<IActionResult> CreatCity([FromBody] List<CreateCityRequest> request)
         {
-            new DataLayer().CreateCity(city);
+            var cityList = request.Select(city => new City(city.CityName)).ToList();
+            // DI me
+            await _cityCreatorService.CreateCity(cityList);
             return Ok("done");
         }
 
-        [HttpPut("weatherhistory")]
-        public IActionResult CreateWeatherHistory([FromBody] WeatherHistory historyItem)
+        [HttpDelete("{cityName}")]
+        public async Task<IActionResult> DeleteCity(string cityName)
         {
-            if (ValidateWeatherHistoryObject(historyItem))
-            {
-                 new DataLayer().CreateWeatherHistoryItem(historyItem);
-                return Ok("created.");       
-            }
-            else
-            {
-                return BadRequest($"Date for History Item {historyItem.Date} is not formatted as YYYY-MM-DD");
-            }
+            await _cityCreatorService.DeleteCity(new City(cityName));
+            return Ok("done");
         }
 
         [HttpGet("{cityName}/weatherhistory")]
         public JsonResult GetWeatherHistory(string cityName)
         {
-            return new JsonResult(new DataLayer().GetWeatherHistoryForCity(cityName));
+            return new JsonResult(_dataLayer.GetWeatherHistoryForCity(new City(cityName)));
+        }
+
+        [HttpGet("topweatherscores")]
+        public async Task<JsonResult> GetTopWeatherScores()
+        {
+            var response = await _cityGetterService.GetTopWeatherScoreCities();
+            return new JsonResult(response);
+        }
+
+        [HttpGet("topsundays")]
+        public async Task<JsonResult> GetTopSunDays()
+        {
+            var response = await _cityGetterService.GetTopIdealSunDays();
+            return new JsonResult(response);
+        }
+
+        [HttpGet("weatherhistory/{date}")]
+        public async Task<JsonResult> GetWeatherHistoryForDate(string date)
+        {
+            var response = await _cityGetterService.GetWeatherHistoryForDate(date);
+            return new JsonResult(response);
         }
 
         private bool ValidateWeatherHistoryObject(WeatherHistory historyItem)
