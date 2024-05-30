@@ -4,6 +4,9 @@ public static class DataStringConstants
 {
     public const string PK = "PK";
     public const string SK = "SK";
+    public const string GS11 = "GSI1";
+    public const string GS11PK = "GSI1PK";
+    public const string GSI1SK = "GSI1SK";
     public static class SortableCityStatsSKValues
     {
         public const string IdealSunDays = "IDEALSUNDAYS";

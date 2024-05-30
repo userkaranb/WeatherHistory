@@ -62,6 +62,13 @@ namespace Jubilado.Controllers
             return new JsonResult(response);
         }
 
+        [HttpGet("weatherhistory/{date}")]
+        public async Task<JsonResult> GetWeatherHistoryForDate(string date)
+        {
+            var response = await _cityGetterService.GetWeatherHistoryForDate(date);
+            return new JsonResult(response);
+        }
+
         private bool ValidateWeatherHistoryObject(WeatherHistory historyItem)
         {
             string dateString = historyItem.Date; // Example date string in YYYY-MM-DD format

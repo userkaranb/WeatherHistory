@@ -16,6 +16,7 @@ public interface IDataLayer
     void CreateWeatherHistoryItems(List<WeatherHistory> historyItems);
     void CreateSortableWeatherSortKey<T>(List<T> scores) where T : SortableCityWeatherAttribute;
     Task BackfillGSIForWeatherHistory();
+    Task<List<WeatherHistory>> GetWeatherHistoryForDate(string date);
 }
 
 public class DataLayer : IDataLayer
@@ -28,6 +29,22 @@ public class DataLayer : IDataLayer
     {
         _dynamoDbClient = dynamoDbClient;
         _table = tableLoader.LoadTable(dynamoDbClient, TableName);
+    }
+
+    public async Task<List<WeatherHistory>> GetWeatherHistoryForDate(string date)
+    {
+        var queryRequest = new QueryRequest
+        {
+            TableName = TableName,
+            IndexName = DataStringConstants.GS11,
+            KeyConditionExpression = $"{DataStringConstants.GS11PK} = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":pk", new AttributeValue { S = $"{DataStringConstants.CityDataObject.WeatherHistoryKey}#{date}" } },
+            }
+        };
+        var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
+        return queryResponse.Items.Select(x => ItemFactory.ToWeatherHistory(x)).ToList();
     }
     public async Task<List<T>> GetExistingWeatherScoreAttributeByScan<T>(string attributesToScan) where T : SortableCityWeatherAttribute
     {
