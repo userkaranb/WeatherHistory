@@ -108,8 +108,14 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
-var backfiller = container.Resolve<IBackfiller>();
-backfiller.BackfillGSIForWeatherHistory();
+// var backfiller = container.Resolve<IBackfiller>();
+// backfiller.BackfillGSIForWeatherHistory();
+
+using (var scope = app.Services.CreateScope())
+{
+    var backfiller = scope.ServiceProvider.GetRequiredService<IBackfiller>();
+    await backfiller.BackfillGSIForWeatherHistory(); // Call your method here
+}
 
 // TO DO:
 

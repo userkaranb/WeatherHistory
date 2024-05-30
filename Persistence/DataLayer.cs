@@ -58,39 +58,61 @@ public class DataLayer : IDataLayer
 
         foreach (var item in scanResponse.Items)
         {
+            // var key = new Dictionary<string, AttributeValue>
+            // {
+            //     { "PK", item["PK"] },
+            //     { "SK", item["SK"] }
+            // };
+
+            // var itemToUpdate = new Dictionary<string, AttributeValueUpdate>
+            // {
+            //     { "GSI1PK", new AttributeValueUpdate(item["SK"], AttributeAction.ADD) },
+            //     { "GSI1SK", new AttributeValueUpdate(item["PK"], AttributeAction.ADD) },
+            //  };
+
+            // await UpdateItem(key, itemToUpdate);
             var updateRequest = new Update
             {
                 TableName = TableName,
                 Key = new Dictionary<string, AttributeValue>
-            {
-                { "PK", item["PK"] },
-                { "SK", item["SK"] }
-            },
+                {
+                    { "PK", item["PK"] },
+                    { "SK", item["SK"] }
+                },
                 UpdateExpression = "SET GSI1PK = :val1, GSI1SK = :val2",
                 ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                { ":val1", item["SK"] },
-                { ":val2", item["PK"] }
-            }
+                {
+                    { ":val1", item["SK"] },
+                    { ":val2", item["PK"] }
+                }
             };
 
             transactWriteItems.Add(new TransactWriteItem { Update = updateRequest });
         }
 
-        var request = new TransactWriteItemsRequest
+        var chunkedItems = transactWriteItems.Chunk(25).ToList();
+        foreach (var chunk in chunkedItems)
         {
-            TransactItems = transactWriteItems
-        };
+            var request = new TransactWriteItemsRequest
+            {
+                TransactItems = chunk.ToList()
+            };
 
-        try
-        {
-            var response = await _dynamoDbClient.TransactWriteItemsAsync(request);
-            Console.WriteLine("Bulk update succeeded.");
+            try
+            {
+                using (var newClient = new AmazonDynamoDBClient())
+                {
+                    var response = await newClient.TransactWriteItemsAsync(request);
+                    Console.WriteLine("Bulk update succeeded.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Bulk update failed: {ex.Message}");
+            }
+
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Bulk update failed: {ex.Message}");
-        }
+
     }
 
     public async Task DeleteCity(City city)
